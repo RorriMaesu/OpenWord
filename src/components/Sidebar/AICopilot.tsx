@@ -118,6 +118,11 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   }, [messages, streamedResponse]);
 
   const handleLaunchOllama = async () => {
+    const agree = window.confirm(
+      "Would you like OpenWord to attempt to automatically locate and launch the local Ollama background service on your machine?"
+    );
+    if (!agree) return;
+
     setIsLaunching(true);
     const launched = await launchLocalOllama();
     if (launched) {

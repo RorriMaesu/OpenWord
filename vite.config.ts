@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { exec } from 'child_process'
 import http from 'http'
+import fs from 'fs'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -20,9 +22,26 @@ export default defineConfig({
                 if (data.action === 'launch') {
                   const isWindows = process.platform === 'win32';
                   if (isWindows) {
-                    exec('start "" "ollama"');
+                    const localAppData = process.env.LOCALAPPDATA || path.join(process.env.USERPROFILE || '', 'AppData', 'Local');
+                    const userInstallPath = path.join(localAppData, 'Programs', 'Ollama', 'ollama app.exe');
+                    const systemInstallPath = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Ollama', 'ollama.exe');
+                    
+                    if (fs.existsSync(userInstallPath)) {
+                      exec(`start "" "${userInstallPath}"`);
+                    } else if (fs.existsSync(systemInstallPath)) {
+                      exec(`start "" "${systemInstallPath}"`);
+                    } else {
+                      exec('start "" "ollama app"').on('error', () => {
+                        exec('start "" "ollama"');
+                      });
+                    }
                   } else if (process.platform === 'darwin') {
-                    exec('open -a Ollama');
+                    const appPath = '/Applications/Ollama.app';
+                    if (fs.existsSync(appPath)) {
+                      exec('open -a Ollama');
+                    } else {
+                      exec('open -a Ollama');
+                    }
                   } else {
                     exec('ollama serve &');
                   }
