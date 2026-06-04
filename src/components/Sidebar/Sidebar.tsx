@@ -47,7 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
 
     const handleMouseMove = (mouseMoveEvent: MouseEvent) => {
       const newWidth = window.innerWidth - mouseMoveEvent.clientX;
-      const clampedWidth = Math.max(320, Math.min(newWidth, 815));
+      const clampedWidth = Math.max(320, Math.min(newWidth, 1020));
       setWidth(clampedWidth);
     };
 
