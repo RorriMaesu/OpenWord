@@ -1,0 +1,177 @@
+import { CreateMLCEngine, prebuiltAppConfig } from '@mlc-ai/web-llm';
+import type { MLCEngine } from '@mlc-ai/web-llm';
+
+let activeEngine: MLCEngine | null = null;
+let activeModelId: string | null = null;
+
+export interface EdgeModel {
+  model_id: string;
+  name: string;
+  size: string;
+}
+
+export function checkWebGPUSupport(): boolean {
+  return typeof navigator !== 'undefined' && !!navigator.gpu;
+}
+
+/**
+ * Get dynamic list of edge-suitable models from WebLLM registry
+ */
+export function getAvailableEdgeModels(): EdgeModel[] {
+  const defaultModels: EdgeModel[] = [
+    {
+      model_id: 'gemma-2-2b-it-q4f16_1-MLC',
+      name: 'Gemma 2 2B (Recommended)',
+      size: '1.6 GB'
+    },
+    {
+      model_id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+      name: 'Llama 3.2 1B (Mobile Friendly)',
+      size: '1.2 GB'
+    },
+    {
+      model_id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
+      name: 'Qwen 2.5 1.5B (Fast & Clean)',
+      size: '1.4 GB'
+    },
+    {
+      model_id: 'Phi-3-mini-4k-instruct-q4f16_1-MLC',
+      name: 'Phi 3 Mini (3.8B - Advanced)',
+      size: '2.2 GB'
+    }
+  ];
+
+  try {
+    const prebuiltList = prebuiltAppConfig.model_list || [];
+    const edgeCompatibleKeywords = ['1b', '2b', '3b', '1.5b', 'e2b', 'gemma-2b', 'gemma2-2b', 'gemma-4-e2b', 'gemma4-2b', 'phi-3-mini', 'phi-3'];
+    
+    const dynamicallyDiscovered = prebuiltList
+      .filter(item => {
+        const id = item.model_id.toLowerCase();
+        return edgeCompatibleKeywords.some(kw => id.includes(kw));
+      })
+      .map(item => {
+        let cleanName = item.model_id
+          .replace(/-MLC$/, '')
+          .replace(/-q\w+$/, '')
+          .replace(/-Instruct$/, '')
+          .replace(/-it$/, '')
+          .replace(/-/g, ' ');
+        
+        return {
+          model_id: item.model_id,
+          name: cleanName,
+          size: item.model_id.includes('1b') ? '1.2 GB' : item.model_id.includes('2b') ? '1.6 GB' : '2.0 GB'
+        };
+      });
+      
+    const merged = [...defaultModels];
+    for (const item of dynamicallyDiscovered) {
+      if (!merged.some(m => m.model_id === item.model_id)) {
+        merged.push(item);
+      }
+    }
+    return merged;
+  } catch (err) {
+    console.warn('Failed to retrieve WebLLM prebuilt config, using defaults:', err);
+    return defaultModels;
+  }
+}
+
+/**
+ * Initialize WebLLM engine with loading callback
+ */
+export async function loadWebGPUEngine(
+  modelId: string,
+  customConfig: any | null,
+  onProgress: (text: string, value: number) => void
+): Promise<MLCEngine> {
+  if (activeEngine && activeModelId === modelId) {
+    return activeEngine;
+  }
+
+  if (activeEngine) {
+    try {
+      await activeEngine.unload();
+    } catch {
+      // Ignore unload errors
+    }
+    activeEngine = null;
+  }
+
+  const engineConfig: any = {};
+  if (customConfig) {
+    engineConfig.appConfig = {
+      model_list: [customConfig]
+    };
+  }
+
+  activeEngine = await CreateMLCEngine(modelId, {
+    initProgressCallback: (progress) => {
+      onProgress(progress.text, progress.progress || 0);
+    },
+    ...engineConfig
+  });
+  
+  activeModelId = modelId;
+  return activeEngine;
+}
+
+/**
+ * Check if the engine is currently loaded for a model
+ */
+export function isEngineLoaded(modelId: string): boolean {
+  return !!activeEngine && activeModelId === modelId;
+}
+
+/**
+ * Stream completions from the WebGPU engine
+ */
+export async function streamWebGPUChat(
+  messages: any[],
+  options: { temperature?: number },
+  onChunk: (text: string) => void,
+  onDone: (fullText: string) => void,
+  onError: (err: any) => void
+): Promise<() => void> {
+  if (!activeEngine) {
+    onError(new Error('WebGPU Engine is not loaded. Please select and load a model.'));
+    return () => {};
+  }
+
+  let isCancelled = false;
+
+  const runChat = async () => {
+    try {
+      const completion = await activeEngine!.chat.completions.create({
+        messages,
+        temperature: options.temperature ?? 0.7,
+        stream: true
+      });
+
+      let fullResponseText = '';
+      for await (const chunk of completion) {
+        if (isCancelled) break;
+        const delta = chunk.choices[0]?.delta?.content || '';
+        if (delta) {
+          fullResponseText += delta;
+          onChunk(delta);
+        }
+      }
+      
+      if (!isCancelled) {
+        onDone(fullResponseText);
+      }
+    } catch (err) {
+      if (!isCancelled) {
+        onError(err);
+      }
+    }
+  };
+
+  runChat();
+
+  return () => {
+    isCancelled = true;
+  };
+}

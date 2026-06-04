@@ -2593,6 +2593,134 @@
   color: white;
 }
 
+.copilot-mode-select {
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.webgpu-action-btn {
+  background: var(--bg-sheet);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  height: 22px;
+  width: 22px;
+  transition: all var(--transition-fast);
+}
+
+.webgpu-action-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--word-blue);
+  border-color: var(--word-blue-hover);
+}
+
+.webgpu-action-btn.loaded {
+  background: var(--word-blue-light);
+  color: var(--word-blue);
+  border-color: var(--word-blue);
+  box-shadow: 0 0 4px var(--word-blue-light);
+}
+
+.unsupported-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: HSL(360, 80%, 50%);
+  background: rgba(220, 38, 38, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(220, 38, 38, 0.15);
+}
+
+/* WebGPU Loading Progress Overlay styling */
+.webgpu-loading-overlay {
+  position: absolute;
+  top: 40px; /* Right below status bar */
+  left: 0;
+  width: 100%;
+  height: calc(100% - 40px);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn var(--transition-fast);
+}
+
+.webgpu-load-progress-card {
+  width: 90%;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: slideUp var(--transition-normal);
+}
+
+.webgpu-load-tip {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.custom-webgpu-config {
+  margin-top: 10px;
+}
+
+.webgpu-unsupported-alert {
+  border-color: rgba(220, 38, 38, 0.15);
+}
+
+.webgpu-unsupported-alert .step-list {
+  margin-top: 6px;
+  padding-left: 16px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Dark mode overrides for WebGPU elements */
+[data-theme='dark'] .copilot-mode-select {
+  color: var(--text-main);
+  background: transparent;
+}
+
+[data-theme='dark'] .webgpu-action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .webgpu-action-btn.loaded {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--brand-300);
+  border-color: var(--brand-450);
+}
+
+[data-theme='dark'] .webgpu-loading-overlay {
+  background: rgba(30, 30, 35, 0.6);
+}
+
+[data-theme='dark'] .webgpu-load-progress-card {
+  background: rgba(35, 35, 40, 0.95);
+  border-color: var(--border-color);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
 /* ==========================================
    7. OLLAMA INSTALLATION ASSISTANT MODAL
    ========================================== */

@@ -9,7 +9,7 @@ import {
   checkOllamaStatus, launchLocalOllama, fetchLocalModels, 
   streamOllamaChat, getControlApiUrl, streamOllamaPull
 } from '../../utils/ollama';
-import type { OllamaMessage, PullProgress } from '../../utils/ollama';
+import type { PullProgress } from '../../utils/ollama';
 import { detectHardware, detectOS } from '../../utils/hardware';
 import type { HardwareProfile, OSDetails } from '../../utils/hardware';
 import { 
@@ -21,6 +21,11 @@ import { CopilotDiffCard } from './CopilotDiffCard';
 import { AgentStreamParser } from '../../utils/agentParser';
 import type { ToolCallEvent } from '../../utils/agentParser';
 import { getFriendlyModelName } from '../../utils/modelHelper';
+import { 
+  checkWebGPUSupport, getAvailableEdgeModels, loadWebGPUEngine, 
+  isEngineLoaded, streamWebGPUChat 
+} from '../../utils/webllm';
+import type { EdgeModel } from '../../utils/webllm';
 
 interface AICopilotProps {
   editor: Editor | null;
@@ -53,6 +58,18 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [pullProgress, setPullProgress] = useState<PullProgress | null>(null);
   const [pullPercentage, setPullPercentage] = useState<number>(0);
   const cancelPullRef = useRef<(() => void) | null>(null);
+
+  // WebGPU states
+  const [modelMode, setModelMode] = useState<'ollama' | 'webgpu'>('ollama');
+  const [isWebGPUAvailable, setIsWebGPUAvailable] = useState<boolean>(true);
+  const [webgpuModels, setWebgpuModels] = useState<EdgeModel[]>([]);
+  const [selectedWebgpuModel, setSelectedWebgpuModel] = useState<string>('gemma-2-2b-it-q4f16_1-MLC');
+  const [isWebgpuLoading, setIsWebgpuLoading] = useState<boolean>(false);
+  const [webgpuLoadProgress, setWebgpuLoadProgress] = useState<{ text: string; pct: number } | null>(null);
+  const [isWebgpuLoaded, setIsWebgpuLoaded] = useState<boolean>(false);
+  const [customWebgpuWeight, setCustomWebgpuWeight] = useState<string>('');
+  const [customWebgpuLib, setCustomWebgpuLib] = useState<string>('');
+  const cancelWebgpuChatRef = useRef<(() => void) | null>(null);
 
   // Hardware and OS states
   const [hardware, setHardware] = useState<HardwareProfile | null>(null);
@@ -93,11 +110,23 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     const os = detectOS();
     setDetectedOS(os);
     setSelectedOS(os.osName);
+
+    // Check WebGPU availability
+    const hasWebGPU = checkWebGPUSupport();
+    setIsWebGPUAvailable(hasWebGPU);
+
+    // Retrieve and populate filtered edge models
+    const edgeList = getAvailableEdgeModels();
+    setWebgpuModels(edgeList);
+    if (edgeList.length > 0) {
+      setSelectedWebgpuModel(edgeList[0].model_id);
+    }
   }, []);
 
   // Sync / set dynamic greeting based on currently selected model
   useEffect(() => {
-    const friendlyName = getFriendlyModelName(selectedModel);
+    const activeModel = modelMode === 'webgpu' ? selectedWebgpuModel : selectedModel;
+    const friendlyName = getFriendlyModelName(activeModel);
     // If messages are empty or only contain a greeting assistant role, replace the greeting
     if (messages.length === 0 || (messages.length === 1 && messages[0].role === 'assistant')) {
       setMessages([
@@ -107,7 +136,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
         }
       ]);
     }
-  }, [selectedModel]);
+  }, [selectedModel, selectedWebgpuModel, modelMode]);
 
   // Ollama connection polling
   const runConnectionCheck = async () => {
@@ -204,6 +233,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     return () => {
       if (cancelStreamRef.current) cancelStreamRef.current();
       if (cancelPullRef.current) cancelPullRef.current();
+      if (cancelWebgpuChatRef.current) cancelWebgpuChatRef.current();
     };
   }, []);
 
@@ -254,9 +284,60 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     }
   };
 
+  const handleLoadWebgpuModel = async () => {
+    setIsWebgpuLoading(true);
+    setIsWebgpuLoaded(false);
+    setWebgpuLoadProgress({ text: 'Starting WebGPU context...', pct: 0 });
+
+    let customConfig: any | null = null;
+    if (selectedWebgpuModel === 'custom') {
+      if (!customWebgpuWeight.trim() || !customWebgpuLib.trim()) {
+        alert('Please provide both Hugging Face weights repository and compiled model WASM library path.');
+        setIsWebgpuLoading(false);
+        setWebgpuLoadProgress(null);
+        return;
+      }
+      customConfig = {
+        model: customWebgpuWeight.trim(),
+        model_id: 'custom-webgpu-model',
+        model_lib: customWebgpuLib.trim()
+      };
+    }
+
+    try {
+      const targetModelId = selectedWebgpuModel === 'custom' ? 'custom-webgpu-model' : selectedWebgpuModel;
+      await loadWebGPUEngine(
+        targetModelId,
+        customConfig,
+        (text, value) => {
+          setWebgpuLoadProgress({
+            text,
+            pct: Math.round(value * 100)
+          });
+        }
+      );
+      
+      setIsWebgpuLoading(false);
+      setIsWebgpuLoaded(true);
+      setWebgpuLoadProgress(null);
+      alert(`WebGPU Model loaded and active in browser!`);
+    } catch (err: any) {
+      console.error('Failed to load WebGPU model:', err);
+      setIsWebgpuLoading(false);
+      setIsWebgpuLoaded(false);
+      setWebgpuLoadProgress({ text: `Failed to load: ${err.message || err}`, pct: 0 });
+      alert(`Error loading browser model: ${err.message || err}`);
+    }
+  };
+
   const handleSendPrompt = async (forcedPrompt?: string) => {
     const promptToSend = forcedPrompt || inputPrompt;
-    if (!promptToSend.trim() || isGenerating || !isConnected) return;
+    if (!promptToSend.trim() || isGenerating) return;
+    if (modelMode === 'ollama' && !isConnected) return;
+    if (modelMode === 'webgpu' && !isWebgpuLoaded) {
+      alert('Please load the WebGPU model first before chatting.');
+      return;
+    }
 
     if (!forcedPrompt) setInputPrompt('');
     
@@ -273,7 +354,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     setStreamedOperations([]);
 
     // Construct request message pipeline
-    const pipeline: OllamaMessage[] = [];
+    const pipeline: any[] = [];
 
     // Inject editor context if checked
     let blockContext = '';
@@ -283,7 +364,8 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
         currentBlocks.map(b => `Block ${b.index} (${b.type}): "${b.text}"`).join('\n') + '\n\n';
     }
 
-    const friendlyName = getFriendlyModelName(selectedModel);
+    const activeModel = modelMode === 'webgpu' ? selectedWebgpuModel : selectedModel;
+    const friendlyName = getFriendlyModelName(activeModel);
 
     const systemPromptBase = `You are ${friendlyName}, an expert AI writing collaborator and editor. You can help the user edit their document.
 You have direct, real-time access to modify the document. To perform edits, inserts, or deletes, you must output special XML tags inline within your response.
@@ -462,80 +544,111 @@ Response: Certainly, I will delete the outdated paragraph.
       }
     );
 
-    const cancel = await streamOllamaChat(
-      selectedModel,
-      pipeline,
-      options,
-      (chunk) => {
-        parser.appendChunk(chunk);
-      },
-      (_doneText) => {
-        parser.finalize();
+    const onDoneCallback = (_doneText: string) => {
+      parser.finalize();
 
-        if (directEdit) {
-          // In Direct Edit mode, edits are already applied directly in real-time
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: parser.getConversationalText()
-          }]);
-        } else {
-          // Convert the finalized events to BlockOperations for Proposal Mode
-          const finalOps: BlockOperation[] = parser.getFinalizedEvents().map(event => {
-            let wrappedHtml = event.content.trim();
-            if (!wrappedHtml.startsWith('<')) {
-              if (event.type === 'insert') {
-                const tag = event.blockType === 'heading' ? 'h1' : 'p';
-                wrappedHtml = `<${tag}>${wrappedHtml}</${tag}>`;
-              } else if (event.type === 'edit') {
-                const targetBlock = originalBlocks.find(b => b.index === event.index);
-                const tagMatch = targetBlock?.html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>/);
-                if (tagMatch) {
-                  const tagName = tagMatch[1];
-                  const attrs = tagMatch[2];
-                  wrappedHtml = `<${tagName}${attrs}>${wrappedHtml}</${tagName}>`;
-                } else {
-                  wrappedHtml = `<p>${wrappedHtml}</p>`;
-                }
+      if (directEdit) {
+        // In Direct Edit mode, edits are already applied directly in real-time
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: parser.getConversationalText()
+        }]);
+      } else {
+        // Convert the finalized events to BlockOperations for Proposal Mode
+        const finalOps: BlockOperation[] = parser.getFinalizedEvents().map(event => {
+          let wrappedHtml = event.content.trim();
+          if (!wrappedHtml.startsWith('<')) {
+            if (event.type === 'insert') {
+              const tag = event.blockType === 'heading' ? 'h1' : 'p';
+              wrappedHtml = `<${tag}>${wrappedHtml}</${tag}>`;
+            } else if (event.type === 'edit') {
+              const targetBlock = originalBlocks.find(b => b.index === event.index);
+              const tagMatch = targetBlock?.html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>/);
+              if (tagMatch) {
+                const tagName = tagMatch[1];
+                const attrs = tagMatch[2];
+                wrappedHtml = `<${tagName}${attrs}>${wrappedHtml}</${tagName}>`;
+              } else {
+                wrappedHtml = `<p>${wrappedHtml}</p>`;
               }
             }
-            return {
-              type: event.type,
-              index: event.index,
-              html: event.type !== 'delete' ? wrappedHtml : undefined
-            };
-          });
+          }
+          return {
+            type: event.type,
+            index: event.index,
+            html: event.type !== 'delete' ? wrappedHtml : undefined
+          };
+        });
 
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: parser.getConversationalText(),
-            operations: finalOps,
-            originalBlocks: originalBlocks,
-            status: finalOps.length > 0 ? 'pending' : undefined
-          }]);
-        }
-        setStreamedResponse('');
-        setStreamedOperations([]);
-        setIsGenerating(false);
-      },
-      (err) => {
-        console.error('Ollama Stream error:', err);
-        setMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: Connection lost or request failed. Please check that Ollama is serving ${selectedModel}.` }]);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: parser.getConversationalText(),
+          operations: finalOps,
+          originalBlocks: originalBlocks,
+          status: finalOps.length > 0 ? 'pending' : undefined
+        }]);
+      }
+      setStreamedResponse('');
+      setStreamedOperations([]);
+      setIsGenerating(false);
+    };
+
+    const onErrorCallback = (err: any) => {
+      console.error('AI stream error:', err);
+      const friendlyError = modelMode === 'webgpu' 
+        ? `❌ WebGPU error: ${err.message || err}`
+        : `❌ Ollama error: Connection lost. Ensure Ollama is running and model '${selectedModel}' is available.`;
+      setMessages(prev => [...prev, { role: 'assistant', content: friendlyError }]);
+      setStreamedResponse('');
+      setStreamedOperations([]);
+      setIsGenerating(false);
+    };
+
+    if (modelMode === 'webgpu') {
+      const cancel = await streamWebGPUChat(
+        pipeline,
+        { temperature },
+        (chunk) => {
+          parser.appendChunk(chunk);
+        },
+        onDoneCallback,
+        onErrorCallback
+      );
+      cancelWebgpuChatRef.current = cancel;
+    } else {
+      const cancel = await streamOllamaChat(
+        selectedModel,
+        pipeline,
+        options,
+        (chunk) => {
+          parser.appendChunk(chunk);
+        },
+        onDoneCallback,
+        onErrorCallback
+      );
+      cancelStreamRef.current = cancel;
+    }
+  };
+
+  const handleCancelGeneration = () => {
+    if (modelMode === 'webgpu') {
+      if (cancelWebgpuChatRef.current) {
+        cancelWebgpuChatRef.current();
+        cancelWebgpuChatRef.current = null;
+        setMessages(prev => [...prev, { role: 'assistant', content: streamedResponse + ' [Generation Cancelled]' }]);
         setStreamedResponse('');
         setStreamedOperations([]);
         setIsGenerating(false);
       }
-    );
-
-    cancelStreamRef.current = cancel;
-  };
-
-  const handleCancelGeneration = () => {
-    if (cancelStreamRef.current) {
-      cancelStreamRef.current();
-      setMessages(prev => [...prev, { role: 'assistant', content: streamedResponse + ' [Generation Cancelled]' }]);
-      setStreamedResponse('');
-      setStreamedOperations([]);
-      setIsGenerating(false);
+    } else {
+      if (cancelStreamRef.current) {
+        cancelStreamRef.current();
+        cancelStreamRef.current = null;
+        setMessages(prev => [...prev, { role: 'assistant', content: streamedResponse + ' [Generation Cancelled]' }]);
+        setStreamedResponse('');
+        setStreamedOperations([]);
+        setIsGenerating(false);
+      }
     }
   };
 
@@ -598,36 +711,166 @@ Response: Certainly, I will delete the outdated paragraph.
       {/* Connection Header */}
       <div className="copilot-status-bar">
         <div className="status-indicator-wrapper">
-          <span className={`status-led ${isConnected ? 'active' : isChecking ? 'checking' : 'inactive'}`} />
-          <span className="status-label">
-            {isConnected ? 'Ollama: Connected' : isChecking ? 'Checking System...' : 'Ollama: Off'}
-          </span>
+          <span className={`status-led ${
+            modelMode === 'webgpu' 
+              ? (isWebgpuLoaded ? 'active' : isWebgpuLoading ? 'checking' : 'inactive') 
+              : (isConnected ? 'active' : isChecking ? 'checking' : 'inactive')
+          }`} />
+          <select 
+            className="copilot-mode-select"
+            value={modelMode}
+            onChange={(e) => setModelMode(e.target.value as 'ollama' | 'webgpu')}
+          >
+            <option value="ollama">Ollama (Daemon)</option>
+            <option value="webgpu">WebGPU (Browser)</option>
+          </select>
         </div>
         
-        {isConnected ? (
-          <div className="status-model-row">
-            <select 
-              className="copilot-model-select"
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-            >
-              {models.map(m => <option key={m} value={m}>{m}</option>)}
-              {models.length === 0 && <option value="gemma4:2b">gemma4:2b</option>}
-            </select>
-            <button 
-              className={`copilot-download-toggle-btn ${showDownloader ? 'active' : ''}`}
-              onClick={() => setShowDownloader(!showDownloader)}
-              title="Download new models"
-            >
-              <Download size={13} />
-            </button>
-          </div>
+        {modelMode === 'webgpu' ? (
+          isWebGPUAvailable ? (
+            <div className="status-model-row">
+              <select 
+                className="copilot-model-select"
+                value={selectedWebgpuModel}
+                onChange={(e) => {
+                  setSelectedWebgpuModel(e.target.value);
+                  setIsWebgpuLoaded(isEngineLoaded(e.target.value));
+                }}
+                disabled={isWebgpuLoading}
+              >
+                {webgpuModels.map(m => (
+                  <option key={m.model_id} value={m.model_id}>
+                    {m.name} ({m.size})
+                  </option>
+                ))}
+                <option value="custom">Custom MLC Model...</option>
+              </select>
+              
+              <button 
+                onClick={handleLoadWebgpuModel}
+                className={`webgpu-action-btn ${isWebgpuLoaded ? 'loaded' : ''}`}
+                disabled={isWebgpuLoading || (selectedWebgpuModel !== 'custom' && isWebgpuLoaded)}
+                title={isWebgpuLoaded ? "Model loaded and active" : "Load model weights into browser"}
+              >
+                {isWebgpuLoading ? (
+                  <RefreshCw size={11} className="spinning" />
+                ) : isWebgpuLoaded ? (
+                  <Sparkles size={11} />
+                ) : (
+                  <Download size={11} />
+                )}
+              </button>
+            </div>
+          ) : (
+            <span className="unsupported-tag">Unsupported</span>
+          )
         ) : (
-          <button onClick={runConnectionCheck} className="copilot-refresh-btn" title="Retry Check">
-            <RefreshCw size={13} className={isChecking ? 'spinning' : ''} />
-          </button>
+          isConnected ? (
+            <div className="status-model-row">
+              <select 
+                className="copilot-model-select"
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+              >
+                {models.map(m => <option key={m} value={m}>{m}</option>)}
+                {models.length === 0 && <option value="gemma4:2b">gemma4:2b</option>}
+              </select>
+              <button 
+                className={`copilot-download-toggle-btn ${showDownloader ? 'active' : ''}`}
+                onClick={() => setShowDownloader(!showDownloader)}
+                title="Download new models"
+              >
+                <Download size={13} />
+              </button>
+            </div>
+          ) : (
+            <button onClick={runConnectionCheck} className="copilot-refresh-btn" title="Retry Check">
+              <RefreshCw size={13} className={isChecking ? 'spinning' : ''} />
+            </button>
+          )
         )}
       </div>
+
+      {/* WebGPU Loading Progress Card */}
+      {modelMode === 'webgpu' && webgpuLoadProgress && (
+        <div className="webgpu-loading-overlay">
+          <div className="webgpu-load-progress-card">
+            <div className="downloader-header">
+              <RefreshCw size={14} className="downloader-header-icon spinning" />
+              <span>Caching Browser Model...</span>
+            </div>
+            <div className="downloader-body">
+              <p className="webgpu-load-tip">
+                Caching model parameters directly into your browser storage. The first run takes a moment to download. Future loads are instantaneous.
+              </p>
+              
+              <div className="pull-progress-panel">
+                <div className="pull-status-row">
+                  <span className="pull-status-text">{webgpuLoadProgress.text}</span>
+                  <span className="pull-percentage-text">{webgpuLoadProgress.pct}%</span>
+                </div>
+                
+                <div className="pull-progress-bar-bg">
+                  <div 
+                    className="pull-progress-bar-fill"
+                    style={{ width: `${webgpuLoadProgress.pct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WebGPU Custom Settings Drawer */}
+      {modelMode === 'webgpu' && selectedWebgpuModel === 'custom' && !isWebgpuLoaded && (
+        <div className="model-downloader-card custom-webgpu-config animate-slide-down">
+          <div className="downloader-header">
+            <Settings size={14} className="downloader-header-icon" />
+            <span>Custom WebGPU Configuration</span>
+          </div>
+          <div className="downloader-body">
+            <div className="downloader-field-group">
+              <label className="downloader-label">Hugging Face Weights URL:</label>
+              <input 
+                type="text"
+                placeholder="e.g. https://huggingface.co/mlc-ai/gemma-2-2b-it-q4f16_1-MLC"
+                value={customWebgpuWeight}
+                onChange={(e) => setCustomWebgpuWeight(e.target.value)}
+                className="downloader-text-input"
+              />
+            </div>
+            <div className="downloader-field-group">
+              <label className="downloader-label">WASM Library URL (.wasm):</label>
+              <input 
+                type="text"
+                placeholder="e.g. https://raw.githubusercontent.com/.../gemma-2-2b-it-q4f16_1-webgpu.wasm"
+                value={customWebgpuLib}
+                onChange={(e) => setCustomWebgpuLib(e.target.value)}
+                className="downloader-text-input"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WebGPU Unsupported Alert Card */}
+      {modelMode === 'webgpu' && !isWebGPUAvailable && (
+        <div className="copilot-connection-alert webgpu-unsupported-alert">
+          <AlertCircle className="alert-icon" size={18} />
+          <div className="alert-body">
+            <h4>WebGPU Unsupported</h4>
+            <p>
+              Your browser or hardware does not support WebGPU acceleration. To run models locally in your browser:
+            </p>
+            <ol className="step-list">
+              <li>Use <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong> (113+).</li>
+              <li>Ensure hardware acceleration is enabled in browser settings.</li>
+              <li>Or toggle back to <strong>Ollama (Daemon)</strong> mode above if you have Ollama installed.</li>
+            </ol>
+          </div>
+        </div>
+      )}
 
       {/* Model Downloader Card */}
       {isConnected && showDownloader && (
@@ -983,8 +1226,16 @@ Response: Certainly, I will delete the outdated paragraph.
       <div className="copilot-input-area">
         <textarea
           className="copilot-input-field"
-          placeholder={isConnected ? `Ask ${getFriendlyModelName(selectedModel)} to rewrite, write a chapter, or format...` : "Ollama offline - launch service above"}
-          disabled={!isConnected || isGenerating}
+          placeholder={
+            modelMode === 'webgpu'
+              ? (isWebgpuLoaded ? `Ask ${getFriendlyModelName(selectedWebgpuModel)} to rewrite, write a chapter, or format...` : "Load WebGPU model above to begin")
+              : (isConnected ? `Ask ${getFriendlyModelName(selectedModel)} to rewrite, write a chapter, or format...` : "Ollama offline - launch service above")
+          }
+          disabled={
+            isGenerating ||
+            (modelMode === 'ollama' && !isConnected) ||
+            (modelMode === 'webgpu' && !isWebgpuLoaded)
+          }
           value={inputPrompt}
           onChange={(e) => setInputPrompt(e.target.value)}
           onKeyDown={(e) => {
@@ -997,7 +1248,12 @@ Response: Certainly, I will delete the outdated paragraph.
         <button 
           onClick={() => handleSendPrompt()} 
           className="copilot-send-btn"
-          disabled={!isConnected || isGenerating || !inputPrompt.trim()}
+          disabled={
+            isGenerating ||
+            !inputPrompt.trim() ||
+            (modelMode === 'ollama' && !isConnected) ||
+            (modelMode === 'webgpu' && !isWebgpuLoaded)
+          }
           title="Send message"
         >
           <Send size={15} />
