@@ -11,9 +11,46 @@ import {
 import type { OllamaMessage } from '../../utils/ollama';
 import { detectHardware, detectOS } from '../../utils/hardware';
 import type { HardwareProfile, OSDetails } from '../../utils/hardware';
+import { serializeEditorToBlocks } from '../../utils/blocks';
+import type { DocumentBlock, BlockOperation } from '../../utils/blocks';
+import { CopilotDiffCard } from './CopilotDiffCard';
 
 interface AICopilotProps {
   editor: Editor | null;
+}
+
+interface ExtendedMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+  operations?: BlockOperation[];
+  explanation?: string;
+  originalBlocks?: DocumentBlock[];
+  status?: 'pending' | 'applied' | 'rejected';
+}
+
+function parseAssistantResponse(text: string): { content: string; operations?: BlockOperation[]; explanation?: string } {
+  const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+  const match = text.match(jsonRegex);
+
+  if (match) {
+    const rawJson = match[1].trim();
+    const cleanContent = text.replace(jsonRegex, '').trim();
+
+    try {
+      const parsed = JSON.parse(rawJson);
+      if (parsed.operations && Array.isArray(parsed.operations)) {
+        return {
+          content: cleanContent || parsed.explanation || 'Proposed document edits:',
+          operations: parsed.operations,
+          explanation: parsed.explanation
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to parse proposed operations JSON from AI response:', e);
+    }
+  }
+
+  return { content: text };
 }
 
 export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
@@ -41,7 +78,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
 
   // Chat feed states
-  const [messages, setMessages] = useState<OllamaMessage[]>([
+  const [messages, setMessages] = useState<ExtendedMessage[]>([
     { role: 'assistant', content: 'Hello! I am Gemma, your offline AI co-writer. How can I help you write or edit your document today?' }
   ]);
   const [inputPrompt, setInputPrompt] = useState<string>('');
@@ -162,7 +199,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     if (!forcedPrompt) setInputPrompt('');
     
     // Construct user message
-    const userMsg: OllamaMessage = { role: 'user', content: promptToSend };
+    const userMsg: ExtendedMessage = { role: 'user', content: promptToSend };
     const currentMessages = [...messages, userMsg];
     setMessages(currentMessages);
     setIsGenerating(true);
@@ -170,8 +207,15 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
 
     // Construct request message pipeline
     const pipeline: OllamaMessage[] = [];
-    
+
     // Inject editor context if checked
+    let blockContext = '';
+    if (editor) {
+      const currentBlocks = serializeEditorToBlocks(editor);
+      blockContext = `[CURRENT DOCUMENT BLOCKS]:\n` + 
+        currentBlocks.map(b => `Block ${b.index} (${b.type}): "${b.text}"`).join('\n') + '\n\n';
+    }
+
     if (includeContext && editor) {
       const textSelection = editor.state.doc.textBetween(
         editor.state.selection.from,
@@ -191,17 +235,63 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
 
       pipeline.push({
         role: 'system',
-        content: `You are an expert AI writing collaborator and editor. Actively help the user build, refine, or format their document. Use the following context as reference:\n\n${contextText}`
+        content: `You are an expert AI writing collaborator and editor. You can help the user edit their document.
+To edit, insert, or delete paragraphs, headings, lists, or tables in the document, you MUST output a structured JSON block wrapped inside a \`\`\`json\`\`\` code block at the very end of your response.
+
+Supported operations in the operations array:
+- { "type": "edit", "index": <number>, "html": "<p>new block content html</p>" } (replaces the content of block at index)
+- { "type": "insert", "index": <number>, "html": "<p>new block content html</p>" } (inserts a new block AFTER the block at index. Use index -1 to insert at the very beginning of the document)
+- { "type": "delete", "index": <number> } (removes the block at index)
+
+Rules:
+1. Always output valid HTML for the "html" field, using basic inline tags like <strong>, <em>, <a href="...">, etc. if needed.
+2. Refer to the current document blocks list provided below to identify the block indices.
+3. If the user request is just a conversational question (no modifications requested), do NOT output a JSON block. Only output a JSON block when editing is requested.
+
+Example JSON output format:
+\`\`\`json
+{
+  "explanation": "I made the first paragraph more formal.",
+  "operations": [
+    { "type": "edit", "index": 1, "html": "<p>Revised text here...</p>" }
+  ]
+}
+\`\`\`
+
+${contextText}${blockContext}`
       });
     } else {
       pipeline.push({
         role: 'system',
-        content: 'You are an expert AI writing collaborator and editor.'
+        content: `You are an expert AI writing collaborator and editor. You can help the user edit their document.
+To edit, insert, or delete paragraphs, headings, lists, or tables in the document, you MUST output a structured JSON block wrapped inside a \`\`\`json\`\`\` code block at the very end of your response.
+
+Supported operations in the operations array:
+- { "type": "edit", "index": <number>, "html": "<p>new block content html</p>" } (replaces the content of block at index)
+- { "type": "insert", "index": <number>, "html": "<p>new block content html</p>" } (inserts a new block AFTER the block at index. Use index -1 to insert at the very beginning of the document)
+- { "type": "delete", "index": <number> } (removes the block at index)
+
+Rules:
+1. Always output valid HTML for the "html" field, using basic inline tags like <strong>, <em>, <a href="...">, etc. if needed.
+2. Refer to the current document blocks list provided below to identify the block indices.
+3. If the user request is just a conversational question (no modifications requested), do NOT output a JSON block. Only output a JSON block when editing is requested.
+
+Example JSON output format:
+\`\`\`json
+{
+  "explanation": "I made the first paragraph more formal.",
+  "operations": [
+    { "type": "edit", "index": 1, "html": "<p>Revised text here...</p>" }
+  ]
+}
+\`\`\`
+
+${blockContext}`
       });
     }
 
     // Append history
-    pipeline.push(...currentMessages);
+    pipeline.push(...currentMessages.map(m => ({ role: m.role, content: m.content })));
 
     // Call API with MTP settings
     const options = {
@@ -214,10 +304,26 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
       pipeline,
       options,
       (chunk) => {
-        setStreamedResponse(prev => prev + chunk);
+        setStreamedResponse(prev => {
+          const newText = prev + chunk;
+          const jsonStartIndex = newText.indexOf('```json');
+          if (jsonStartIndex !== -1) {
+            return newText.substring(0, jsonStartIndex).trim() + '\n\n[Analyzing edits...]';
+          }
+          return newText;
+        });
       },
       (doneText) => {
-        setMessages(prev => [...prev, { role: 'assistant', content: doneText }]);
+        const parsed = parseAssistantResponse(doneText);
+        const currentBlocks = editor ? serializeEditorToBlocks(editor) : [];
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: parsed.content,
+          operations: parsed.operations,
+          explanation: parsed.explanation,
+          originalBlocks: currentBlocks,
+          status: parsed.operations ? 'pending' : undefined
+        }]);
         setStreamedResponse('');
         setIsGenerating(false);
       },
@@ -384,8 +490,25 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
             <div className="bubble-content-card">
               <div className="bubble-text">{msg.content}</div>
               
-              {/* Insert controls for assistant messages */}
-              {msg.role === 'assistant' && i > 0 && (
+              {/* Render Diff Card if this message contains proposed operations */}
+              {msg.operations && msg.operations.length > 0 && (
+                <CopilotDiffCard
+                  editor={editor}
+                  operations={msg.operations}
+                  originalBlocks={msg.originalBlocks || []}
+                  status={msg.status || 'pending'}
+                  onStatusChange={(newStatus) => {
+                    setMessages(prev => {
+                      const updated = [...prev];
+                      updated[i] = { ...updated[i], status: newStatus };
+                      return updated;
+                    });
+                  }}
+                />
+              )}
+
+              {/* Insert controls for assistant messages (only if no structured operations are present) */}
+              {msg.role === 'assistant' && i > 0 && !msg.operations && (
                 <div className="bubble-action-bar">
                   <button onClick={() => insertContent(msg.content)} className="bubble-action-btn" title="Insert at Cursor">
                     <CornerDownLeft size={12} />
