@@ -18,6 +18,9 @@ interface DocumentContextType {
   updateFooters: (footers: Partial<DocumentState['footers']>) => void;
   updateZoom: (zoom: number) => void;
   updateLayoutMode: (mode: 'pageless' | 'print') => void;
+  currentPage: number;
+  totalPages: number;
+  updatePages: (current: number, total: number) => void;
   saveActiveFile: () => Promise<void>;
   saveAsNewFile: () => Promise<void>;
   openLocalFile: (data: { name: string; html: string; margins: any; pageSize: any; orientation: any; headers: any; footers: any }) => void;
@@ -79,6 +82,14 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const saved = localStorage.getItem('openword_autosave_enabled');
     return saved !== null ? saved === 'true' : true;
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const updatePages = (current: number, total: number) => {
+    setCurrentPage(current);
+    setTotalPages(total);
+  };
 
   useEffect(() => {
     localStorage.setItem('openword_autosave_enabled', autoSaveEnabled.toString());
@@ -284,6 +295,9 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateFooters,
         updateZoom,
         updateLayoutMode,
+        currentPage,
+        totalPages,
+        updatePages,
         saveActiveFile,
         saveAsNewFile,
         openLocalFile,

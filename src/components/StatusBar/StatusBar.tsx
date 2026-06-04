@@ -14,7 +14,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   layoutMode,
   onLayoutModeChange
 }) => {
-  const { docState, isSaving, isDirty, updateZoom } = useDocument();
+  const { docState, isSaving, isDirty, updateZoom, currentPage, totalPages } = useDocument();
 
   const getWordCount = () => {
     if (!editor) return 0;
@@ -46,6 +46,14 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     <div className="statusbar-container">
       {/* Left side: Stats & Saving Indicators */}
       <div className="statusbar-left">
+        {layoutMode === 'print' && (
+          <>
+            <span className="statusbar-item page-count" style={{ fontWeight: 500 }}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <span className="statusbar-divider" />
+          </>
+        )}
         <span className="statusbar-item layout-label">
           <Layout size={14} className="statusbar-icon" />
           <span>{layoutMode === 'print' ? 'Print Layout (A4 Sim)' : 'Pageless Canvas'}</span>

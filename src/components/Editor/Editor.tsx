@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -48,8 +48,11 @@ export const Editor: React.FC<EditorProps> = ({
   showRuler,
   onEditorReady
 }) => {
-  const { docState, updateContent, saveActiveFile } = useDocument();
+  const { docState, updateContent, saveActiveFile, totalPages, updatePages } = useDocument();
   const { zoom, pageSize, orientation } = docState;
+
+  const posPagesRef = useRef<{ pos: number; page: number }[]>([]);
+  const totalPagesRef = useRef(1);
 
   const extensions = useMemo(() => [
     StarterKit.configure({
@@ -96,8 +99,48 @@ export const Editor: React.FC<EditorProps> = ({
       if (text === 'Welcome to OpenWord Start writing your document here...') {
         editor.commands.clearContent(true);
       }
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const selectionPos = editor.state.selection.from;
+      let currPage = 1;
+      const posPages = posPagesRef.current;
+      for (let i = 0; i < posPages.length; i++) {
+        if (selectionPos >= posPages[i].pos) {
+          currPage = posPages[i].page;
+        } else {
+          break;
+        }
+      }
+      updatePages(currPage, totalPagesRef.current);
     }
   });
+
+  // Listen to pagination updates to update posPages and totalPages refs
+  useEffect(() => {
+    const handlePaginationUpdate = (e: Event) => {
+      const { totalPages: total, posPages } = (e as CustomEvent).detail;
+      posPagesRef.current = posPages;
+      totalPagesRef.current = total;
+
+      if (editor) {
+        const selectionPos = editor.state.selection.from;
+        let currPage = 1;
+        for (let i = 0; i < posPages.length; i++) {
+          if (selectionPos >= posPages[i].pos) {
+            currPage = posPages[i].page;
+          } else {
+            break;
+          }
+        }
+        updatePages(currPage, total);
+      }
+    };
+
+    document.addEventListener('openword-pagination-update', handlePaginationUpdate);
+    return () => {
+      document.removeEventListener('openword-pagination-update', handlePaginationUpdate);
+    };
+  }, [editor, updatePages]);
 
   // Synchronize headers and footers dynamically
   useEffect(() => {
@@ -197,7 +240,7 @@ export const Editor: React.FC<EditorProps> = ({
           <EditorContent editor={editor} />
 
           {/* Footer visual indicator */}
-          {layoutMode === 'print' && docState.footers.default && (
+          {layoutMode === 'print' && (docState.footers.default || totalPages) && (
             <div 
               className="editor-footer-overlay"
               style={{
@@ -206,7 +249,8 @@ export const Editor: React.FC<EditorProps> = ({
                 bottom: 'calc(var(--page-margin-bottom) / 2 - 10px)'
               }}
             >
-              {docState.footers.default}
+              <span>{docState.footers.default}</span>
+              <span>{totalPages}</span>
             </div>
           )}
         </div>

@@ -94,6 +94,7 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
             const decorations: Decoration[] = [];
             let currentHeight = 0;
             let pageNum = 1;
+            const posPages: { pos: number; page: number }[] = [];
 
             const headerText = extension.options.headers?.default || '';
             const footerText = extension.options.footers?.default || '';
@@ -103,8 +104,10 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
               
               if (item.isPageBreakNode) {
                 // Manual page break
+                const prevPage = pageNum;
                 currentHeight = 0;
                 pageNum++;
+                posPages.push({ pos: item.pos, page: pageNum });
                 
                 // Add header/footer overlays to the manual page break decoration
                 decorations.push(
@@ -112,10 +115,18 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
                     const container = document.createElement('div');
                     container.className = 'virtual-page-break';
                     
-                    if (footerText) {
+                    if (footerText || prevPage) {
                       const footerDiv = document.createElement('div');
                       footerDiv.className = 'virtual-page-footer-overlay';
-                      footerDiv.innerText = footerText;
+                      
+                      const textSpan = document.createElement('span');
+                      textSpan.innerText = footerText;
+                      footerDiv.appendChild(textSpan);
+
+                      const pageSpan = document.createElement('span');
+                      pageSpan.innerText = String(prevPage);
+                      footerDiv.appendChild(pageSpan);
+
                       container.appendChild(footerDiv);
                     }
                     
@@ -138,16 +149,27 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
               }
 
               if (currentHeight + item.height > usablePageHeight && currentHeight > 0) {
+                const prevPage = pageNum;
                 pageNum++;
+                posPages.push({ pos: item.pos, page: pageNum });
+
                 decorations.push(
                   Decoration.widget(item.pos, () => {
                     const container = document.createElement('div');
                     container.className = 'virtual-page-break';
                     
-                    if (footerText) {
+                    if (footerText || prevPage) {
                       const footerDiv = document.createElement('div');
                       footerDiv.className = 'virtual-page-footer-overlay';
-                      footerDiv.innerText = footerText;
+                      
+                      const textSpan = document.createElement('span');
+                      textSpan.innerText = footerText;
+                      footerDiv.appendChild(textSpan);
+
+                      const pageSpan = document.createElement('span');
+                      pageSpan.innerText = String(prevPage);
+                      footerDiv.appendChild(pageSpan);
+
                       container.appendChild(footerDiv);
                     }
                     
@@ -168,12 +190,21 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
                 );
                 currentHeight = item.height;
               } else {
+                posPages.push({ pos: item.pos, page: pageNum });
                 currentHeight += item.height;
               }
             }
 
             const decorationSet = DecorationSet.create(editorView.state.doc, decorations);
             editorView.dispatch(editorView.state.tr.setMeta(VirtualPaginationKey, decorationSet));
+
+            // Dispatch pagination info for Editor selection and Status Bar
+            document.dispatchEvent(new CustomEvent('openword-pagination-update', {
+              detail: {
+                totalPages: pageNum,
+                posPages
+              }
+            }));
           };
 
           const debouncedCalculate = () => {
