@@ -3657,7 +3657,7 @@ mark {
   box-shadow: 0 0 0 3px var(--word-blue), 0 0 0 9999px rgba(15, 23, 42, 0.15);
   pointer-events: none;
   z-index: 1250;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.2s ease;
 }
 
 .tutorial-tooltip-card {
@@ -3671,7 +3671,7 @@ mark {
   z-index: 1300;
   color: var(--text-main);
   pointer-events: auto;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.2s ease;
 }
 
 [data-theme='dark'] .tutorial-tooltip-card {

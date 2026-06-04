@@ -98,28 +98,43 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
       }
     }
 
+    let animationFrameId: number;
+
     // Position tooltip relative to targeted element
     const updatePosition = () => {
       const element = document.querySelector(step.target);
       if (element) {
         const rect = element.getBoundingClientRect();
-        setCoords({
-          top: rect.top + window.scrollY,
-          left: rect.left + window.scrollX,
-          width: rect.width,
-          height: rect.height
+        setCoords(prev => {
+          if (
+            prev &&
+            prev.top === rect.top + window.scrollY &&
+            prev.left === rect.left + window.scrollX &&
+            prev.width === rect.width &&
+            prev.height === rect.height
+          ) {
+            return prev;
+          }
+          return {
+            top: rect.top + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width,
+            height: rect.height
+          };
         });
       } else {
         setCoords(null);
       }
+      animationFrameId = requestAnimationFrame(updatePosition);
     };
 
     // Run positioning and set listeners
-    setTimeout(updatePosition, 100); // Small delay to let tabs switch and DOM settle
+    animationFrameId = requestAnimationFrame(updatePosition);
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition);
 
     return () => {
+      cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition);
     };
