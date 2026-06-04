@@ -26,7 +26,7 @@ const TOUR_STEPS: TourStep[] = [
     target: '.ruler-inner',
     title: 'Interactive Page Ruler 📏',
     description: 'Adjust document margins on the fly by dragging the handles on either side. Text automatically shifts and wraps in real-time.',
-    placement: 'top'
+    placement: 'bottom'
   },
   {
     target: '.sidebar-resizer-handle',
@@ -59,6 +59,14 @@ const TOUR_STEPS: TourStep[] = [
 export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, setSidebarTab }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [stableTooltipCoords, setStableTooltipCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+    viewportWidth: number;
+    viewportHeight: number;
+  } | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,6 +81,9 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
 
     const step = TOUR_STEPS[currentStep];
     
+    // Reset stable coordinates to null so it captures the new target's coordinates on first frame
+    setStableTooltipCoords(null);
+
     // Dynamically adjust sidebar tab if the step requires it
     if (step.sidebarTab) {
       setSidebarTab(step.sidebarTab);
@@ -105,25 +116,62 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
       const element = document.querySelector(step.target);
       if (element) {
         const rect = element.getBoundingClientRect();
+        const currentCoords = {
+          top: rect.top + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+          height: rect.height
+        };
+
         setCoords(prev => {
           if (
             prev &&
-            prev.top === rect.top + window.scrollY &&
-            prev.left === rect.left + window.scrollX &&
-            prev.width === rect.width &&
-            prev.height === rect.height
+            prev.top === currentCoords.top &&
+            prev.left === currentCoords.left &&
+            prev.width === currentCoords.width &&
+            prev.height === currentCoords.height
           ) {
             return prev;
           }
+          return currentCoords;
+        });
+
+        setStableTooltipCoords(prev => {
+          if (!prev) {
+            return {
+              ...currentCoords,
+              viewportWidth: window.innerWidth,
+              viewportHeight: window.innerHeight
+            };
+          }
+
+          if (currentStep === 2) {
+            // During sidebar resize animation, freeze the coordinates to avoid chasing
+            // unless the window size changes. If so, offset coordinates accordingly.
+            if (prev.viewportWidth !== window.innerWidth || prev.viewportHeight !== window.innerHeight) {
+              const deltaX = window.innerWidth - prev.viewportWidth;
+              const deltaY = window.innerHeight - prev.viewportHeight;
+              return {
+                top: prev.top + deltaY,
+                left: prev.left + deltaX,
+                width: rect.width,
+                height: rect.height,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight
+              };
+            }
+            return prev;
+          }
+
           return {
-            top: rect.top + window.scrollY,
-            left: rect.left + window.scrollX,
-            width: rect.width,
-            height: rect.height
+            ...currentCoords,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight
           };
         });
       } else {
         setCoords(null);
+        setStableTooltipCoords(null);
       }
       animationFrameId = requestAnimationFrame(updatePosition);
     };
@@ -171,7 +219,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
 
   // Determine tooltip style placement offsets
   const getTooltipStyle = () => {
-    if (!coords || !tooltipRef.current) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+    if (!stableTooltipCoords || !tooltipRef.current) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
 
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
     const buffer = 12;
@@ -181,20 +229,20 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
 
     switch (step.placement) {
       case 'bottom':
-        top = coords.top + coords.height + buffer;
-        left = coords.left + (coords.width / 2) - (tooltipRect.width / 2);
+        top = stableTooltipCoords.top + stableTooltipCoords.height + buffer;
+        left = stableTooltipCoords.left + (stableTooltipCoords.width / 2) - (tooltipRect.width / 2);
         break;
       case 'top':
-        top = coords.top - tooltipRect.height - buffer;
-        left = coords.left + (coords.width / 2) - (tooltipRect.width / 2);
+        top = stableTooltipCoords.top - tooltipRect.height - buffer;
+        left = stableTooltipCoords.left + (stableTooltipCoords.width / 2) - (tooltipRect.width / 2);
         break;
       case 'left':
-        top = coords.top + (coords.height / 2) - (tooltipRect.height / 2);
-        left = coords.left - tooltipRect.width - buffer;
+        top = stableTooltipCoords.top + (stableTooltipCoords.height / 2) - (tooltipRect.height / 2);
+        left = stableTooltipCoords.left - tooltipRect.width - buffer;
         break;
       case 'right':
-        top = coords.top + (coords.height / 2) - (tooltipRect.height / 2);
-        left = coords.left + coords.width + buffer;
+        top = stableTooltipCoords.top + (stableTooltipCoords.height / 2) - (tooltipRect.height / 2);
+        left = stableTooltipCoords.left + stableTooltipCoords.width + buffer;
         break;
       case 'center':
       default:

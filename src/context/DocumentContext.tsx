@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { DocumentState } from '../utils/db';
 import { autoSaveDocument, loadDocumentAndHydrate } from '../utils/autoSave';
 import { fileSystemHelper } from '../utils/fileSystem';
@@ -86,10 +86,10 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const updatePages = (current: number, total: number) => {
+  const updatePages = useCallback((current: number, total: number) => {
     setCurrentPage(current);
     setTotalPages(total);
-  };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('openword_autosave_enabled', autoSaveEnabled.toString());
@@ -115,7 +115,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [docState, isDirty]);
+  }, [docState, isDirty, autoSaveEnabled]);
 
   const updateContent = (content: any) => {
     setDocState(prev => ({ ...prev, content }));

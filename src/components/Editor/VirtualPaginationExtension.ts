@@ -107,6 +107,7 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
                 const prevPage = pageNum;
                 currentHeight = 0;
                 pageNum++;
+                const currentPageNum = pageNum;
                 posPages.push({ pos: item.pos, page: pageNum });
                 
                 // Add header/footer overlays to the manual page break decoration
@@ -132,7 +133,7 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
                     
                     const label = document.createElement('span');
                     label.className = 'virtual-page-break-label';
-                    label.innerText = `PAGE BREAK (PAGE ${pageNum})`;
+                    label.innerText = `PAGE BREAK (PAGE ${currentPageNum})`;
                     container.appendChild(label);
                     
                     if (headerText) {
@@ -151,6 +152,7 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
               if (currentHeight + item.height > usablePageHeight && currentHeight > 0) {
                 const prevPage = pageNum;
                 pageNum++;
+                const currentPageNum = pageNum;
                 posPages.push({ pos: item.pos, page: pageNum });
 
                 decorations.push(
@@ -175,7 +177,7 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
                     
                     const label = document.createElement('span');
                     label.className = 'virtual-page-break-label';
-                    label.innerText = `PAGE ${pageNum}`;
+                    label.innerText = `PAGE ${currentPageNum}`;
                     container.appendChild(label);
                     
                     if (headerText) {

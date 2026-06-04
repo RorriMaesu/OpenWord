@@ -26,11 +26,15 @@ export const Ruler: React.FC = () => {
   const handleMouseDownLeft = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDraggingLeft(true);
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
   };
 
   const handleMouseDownRight = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDraggingRight(true);
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
   };
 
   useEffect(() => {
@@ -58,6 +62,9 @@ export const Ruler: React.FC = () => {
     };
 
     const handleMouseUp = () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      
       if (isDraggingLeft) {
         setIsDraggingLeft(false);
         const currentStyleVal = document.documentElement.style.getPropertyValue('--page-margin-left');
@@ -118,8 +125,8 @@ export const Ruler: React.FC = () => {
         }}
       >
         {/* Shaded margins */}
-        <div className="ruler-margin-shading left-shade" style={{ width: `${margins.left}px` }} />
-        <div className="ruler-margin-shading right-shade" style={{ left: `${docWidth - margins.right}px`, width: `${margins.right}px` }} />
+        <div className="ruler-margin-shading left-shade" style={{ width: 'var(--page-margin-left)' }} />
+        <div className="ruler-margin-shading right-shade" style={{ width: 'var(--page-margin-right)' }} />
 
         {/* Ticks */}
         {renderTicks()}
@@ -127,13 +134,13 @@ export const Ruler: React.FC = () => {
         {/* Draggable handles */}
         <div 
           className={`ruler-handle left-handle ${isDraggingLeft ? 'dragging' : ''}`}
-          style={{ left: `${margins.left}px` }}
+          style={{ left: 'var(--page-margin-left)' }}
           onMouseDown={handleMouseDownLeft}
           title="Left Margin"
         />
         <div 
           className={`ruler-handle right-handle ${isDraggingRight ? 'dragging' : ''}`}
-          style={{ left: `${docWidth - margins.right}px` }}
+          style={{ left: 'calc(100% - var(--page-margin-right))' }}
           onMouseDown={handleMouseDownRight}
           title="Right Margin"
         />

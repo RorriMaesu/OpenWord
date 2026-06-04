@@ -53,6 +53,8 @@ export const Editor: React.FC<EditorProps> = ({
 
   const posPagesRef = useRef<{ pos: number; page: number }[]>([]);
   const totalPagesRef = useRef(1);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<any>(null);
 
   const extensions = useMemo(() => [
     StarterKit.configure({
@@ -122,8 +124,9 @@ export const Editor: React.FC<EditorProps> = ({
       posPagesRef.current = posPages;
       totalPagesRef.current = total;
 
-      if (editor) {
-        const selectionPos = editor.state.selection.from;
+      const activeEditor = editorRef.current;
+      if (activeEditor) {
+        const selectionPos = activeEditor.state.selection.from;
         let currPage = 1;
         for (let i = 0; i < posPages.length; i++) {
           if (selectionPos >= posPages[i].pos) {
@@ -133,6 +136,8 @@ export const Editor: React.FC<EditorProps> = ({
           }
         }
         updatePages(currPage, total);
+      } else {
+        updatePages(1, total);
       }
     };
 
@@ -140,7 +145,7 @@ export const Editor: React.FC<EditorProps> = ({
     return () => {
       document.removeEventListener('openword-pagination-update', handlePaginationUpdate);
     };
-  }, [editor, updatePages]);
+  }, [updatePages]);
 
   // Synchronize headers and footers dynamically
   useEffect(() => {
@@ -156,9 +161,60 @@ export const Editor: React.FC<EditorProps> = ({
     }
   }, [docState.headers, docState.footers, editor]);
 
+  // Handle viewport scroll tracking in print mode
+  useEffect(() => {
+    const scrollContainer = workspaceRef.current;
+    if (!scrollContainer || layoutMode !== 'print') return;
+
+    const handleScroll = () => {
+      const activeEditor = editorRef.current;
+      if (!activeEditor || !activeEditor.view) return;
+
+      const editorEl = activeEditor.view.dom;
+      const children = editorEl.children;
+      const containerRect = scrollContainer.getBoundingClientRect();
+      
+      let topChild: Element | null = null;
+      for (let i = 0; i < children.length; i++) {
+        const rect = children[i].getBoundingClientRect();
+        if (rect.bottom > containerRect.top + 80) {
+          topChild = children[i];
+          break;
+        }
+      }
+
+      if (topChild) {
+        try {
+          const pos = activeEditor.view.posAtDOM(topChild, 0);
+          let currPage = 1;
+          const posPages = posPagesRef.current;
+          for (let i = 0; i < posPages.length; i++) {
+            if (pos >= posPages[i].pos) {
+              currPage = posPages[i].page;
+            } else {
+              break;
+            }
+          }
+          updatePages(currPage, totalPagesRef.current);
+        } catch (e) {
+          // Ignore posAtDOM errors during mutations
+        }
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    // Initial check
+    handleScroll();
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [layoutMode, updatePages]);
+
   // Expose editor instance back to parent (App.tsx)
   useEffect(() => {
     if (editor) {
+      editorRef.current = editor;
       onEditorReady(editor);
     }
   }, [editor, onEditorReady]);
@@ -199,7 +255,10 @@ export const Editor: React.FC<EditorProps> = ({
     : (isLandscape ? 1123 : 794);
 
   return (
-    <div className={`editor-workspace-container ${layoutMode === 'print' ? 'print-mode' : 'pageless-mode'}`}>
+    <div 
+      ref={workspaceRef}
+      className={`editor-workspace-container ${layoutMode === 'print' ? 'print-mode' : 'pageless-mode'}`}
+    >
       {/* Visual top ruler matching document scale */}
       {layoutMode === 'print' && showRuler && <Ruler />}
 
