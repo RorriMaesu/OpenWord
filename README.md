@@ -4,40 +4,96 @@ OpenWord is a professional, high-fidelity, client-side word processor built with
 
 [![Live Demo](https://img.shields.io/badge/Demo-Live%20on%20GitHub%20Pages-185abd?style=for-the-badge&logo=githubpages&logoColor=white)](https://rorrimaesu.github.io/OpenWord/)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/rorrimaesu)
+[![React Version](https://img.shields.io/badge/React-19.0-61dafb?style=flat&logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-8.x-646cff?style=flat&logo=vite&logoColor=white)](https://vite.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [![OpenWord Workspace Preview](public/screenshot.png)](https://rorrimaesu.github.io/OpenWord/)
 
 ---
 
-## ✨ Features
+## 🚀 The Value Proposition: 100% Client-Side & Private
 
-*   **Virtual A4/Letter Pagination:** Visual page splits that dynamically calculate heights and separate content exactly like a printed document.
-*   **Dynamic Margin Ruler:** Drag-and-drop margin handles to adjust left and right margins dynamically in real-time, scaled with the document's zoom level.
+Unlike standard cloud word processors, OpenWord is an **offline-first, zero-server application**. 
+*   **Privacy-First:** Your documents are never uploaded to any external server. All text processing, imports, database updates, and document compilation occur directly in your browser sandbox.
+*   **No Accounts Needed:** Start drafting immediately. Your workspace recovers itself automatically on restart using client-side IndexedDB persistence.
+
+---
+
+## ✨ Features Breakdown
+
+### 📁 Page Layout & Print Precision
+*   **Virtual A4/Letter Pagination:** Visual page breaks that automatically calculate paragraph and node heights in real-time, inserting clean page lines exactly like a physical layout.
+*   **Zoom-Scaled Margin Ruler:** Drag-and-drop margin handles to adjust left and right margins dynamically. The cursor tracking scales mathematically to match your current document zoom level.
+*   **Dynamic Headers & Footers:** Set customized running header and footer text zones that automatically overlay relative to page margins.
+
+### 🎨 Premium Desktop Aesthetics
 *   **Auto-Collapsing Ribbon:** An interactive ribbon toolbar matching Microsoft Word's layout. It collapses into tabs automatically to maximize vertical reading space and slides open on hover.
-*   **Direct Title Bar Renaming:** Click and rename the document title directly in the Windows-styled Title Bar.
-*   **Auto-Save & Session Recovery:** Automatic, background saving to IndexedDB (v2) with an prompt-based session recovery interface on startup.
-*   **Header & Footer Overlays:** Add dynamic, document-wide header and footer texts that appear relative to page margins.
-*   **Sidebar Navigation:** Auto-updating outline list based on heading tags to navigate large documents quickly.
-*   **Light/Dark Modes:** Full dark-mode canvas and UI theme selector on the bottom Status Bar.
-*   **Zero-Server Exports:** Import HTML templates or export the document directly to `.docx` files completely client-side.
+*   **Direct Title Bar Renaming:** Edit the document filename directly inside the Windows-styled Title Bar input.
+*   **Sidebar Navigation Outline:** Auto-updating outline list based on heading tags to navigate large documents quickly.
+*   **Aesthetic Theme Selector:** Seamless light-to-dark canvas transition via the bottom Status Bar.
+
+### 🔒 Client-Side Storage & IO
+*   **IndexedDB Autosave:** Background saving to IndexedDB (v2) with an automatic session recovery dialog on startup.
+*   **Zero-Server Exports:** Export documents directly to Microsoft Word `.docx` format using client-side XML packaging.
+*   **Mammoth HTML Importer:** Import local document formats directly into the editor canvas.
 
 ---
 
-## 🛠️ Technology Stack
+## ⚙️ Architecture & Data Flow
 
-*   **Core:** React (v19) + TypeScript + Vite
-*   **Editor Engine:** Tiptap (ProseMirror-based editor)
-*   **Icons:** Lucide React
-*   **State & DB:** HTML5 File System Access API & IndexedDB (client-side database)
-*   **Styling:** Custom HSL variables for a sleek, responsive dark/light theme mockup.
+OpenWord is designed to decouple Tiptap's rich-text events from our React rendering context for fluid editing performance:
+
+```
+                  +----------------------------------+
+                  |       Tiptap/ProseMirror         |
+                  +----------------------------------+
+                                   |
+                         (onUpdate Event / JSON)
+                                   v
+                  +----------------------------------+
+                  |    React DocumentContext State   |
+                  +----------------------------------+
+                     /                            \
+      (Debounced 5s Autosave)             (Debounced 150ms Break)
+                   /                                \
+                  v                                  v
+  +-------------------------------+   +-------------------------------+
+  |       IndexedDB Storage       |   |  Virtual Pagination Extension |
+  |      (Recoverable Session)    |   |     (DOM Height Measure)      |
+  +-------------------------------+   +-------------------------------+
+```
 
 ---
 
-## 🚀 Getting Started
+## 📂 Directory Structure
+
+```
+├── public/                 # Static assets (Favicons, screenshots)
+├── src/
+│   ├── assets/             # Brand logos and SVGs
+│   ├── components/         # Workspace UI layout blocks
+│   │   ├── Editor/         # Custom extensions and pagination logic
+│   │   ├── Ribbon/         # Toolbar operations (Font, spacing, view)
+│   │   ├── Ruler/          # Interactive margin ruler
+│   │   ├── Sidebar/        # Document navigation outline
+│   │   └── StatusBar/      # Page counter, layout toggles, theme switcher
+│   ├── context/            # Global Document layout & editing state
+│   ├── styles/             # Harmony CSS variables & dark theme tokens
+│   ├── utils/              # Exporters, DB helpers, and file system handlers
+│   ├── App.tsx             # Application shell
+│   └── main.tsx            # App bootstrapping
+├── package.json            # Deployment scripts and dependencies
+└── vite.config.ts          # Vite build config & subpath routing
+```
+
+---
+
+## 🛠️ Getting Started
 
 ### Prerequisites
-
-Ensure you have [Node.js](https://nodejs.org/) installed on your machine.
+Make sure you have [Node.js](https://nodejs.org/) installed.
 
 ### Installation
 
@@ -47,55 +103,44 @@ Ensure you have [Node.js](https://nodejs.org/) installed on your machine.
    cd OpenWord
    ```
 
-2. Install the dependencies:
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-3. Run the local development server:
+3. Start local development server:
    ```bash
    npm run dev
    ```
-   Open `http://localhost:5173` in your browser to view the application.
+   Open `http://localhost:5173` in your browser.
 
 ### Building for Production
-
-Compile the production-ready build:
 ```bash
 npm run build
 ```
-This generates a static single-page application inside the `dist/` directory.
+This generates a static website inside the `dist/` directory.
 
 ---
 
 ## 📦 Deployment to GitHub Pages
 
-OpenWord is configured to compile as a static, single-page application, making it ideal for hosting on **GitHub Pages**.
+OpenWord is configured to compile as a static SPA, making it ideal for hosting on GitHub Pages.
 
-### Steps to Deploy:
-
-1. **Install `gh-pages` helper package:**
-   ```bash
-   npm install gh-pages --save-dev
-   ```
-
-2. **Add homepage and scripts to `package.json`:**
-   Configure `package.json` with your repository address:
-   ```json
-   "homepage": "https://RorriMaesu.github.io/OpenWord",
-   "scripts": {
-     ...
-     "predeploy": "npm run build",
-     "deploy": "gh-pages -r https://github.com/RorriMaesu/OpenWord.git -d dist"
-   }
-   ```
-
-3. **Deploy from the command line:**
+### To Deploy:
+1. Ensure your repository remote is configured correctly on your local machine.
+2. Run the deploy script:
    ```bash
    npm run deploy
    ```
+This will compile the assets with base path support (`/OpenWord/`) and push the build directory to the `gh-pages` branch.
 
-This will build the application, push the build artifacts to the `gh-pages` branch, and make the app live. Make sure that GitHub Pages is enabled in your repository settings under the `gh-pages` branch.
+---
+
+## 🗺️ Roadmap
+*   [ ] Custom margin presets (Narrow, Moderate, Wide).
+*   [ ] Full Page-Break rendering inside document export (`.docx` parser compatibility).
+*   [ ] Custom page dimensions selector (Letter, Legal, Executive, A4).
+*   [ ] Advanced keyboard shortcuts helper card.
 
 ---
 
