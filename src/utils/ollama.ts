@@ -193,3 +193,85 @@ export async function streamOllamaChat(
     abortController.abort();
   };
 }
+
+export interface PullProgress {
+  status: string;
+  digest?: string;
+  total?: number;
+  completed?: number;
+}
+
+/**
+ * Pull/Download a model from the Ollama library.
+ */
+export async function streamOllamaPull(
+  model: string,
+  onProgress: (progress: PullProgress) => void,
+  onDone: () => void,
+  onError: (err: any) => void
+): Promise<() => void> {
+  let isCancelled = false;
+  const abortController = new AbortController();
+
+  const runPull = async () => {
+    try {
+      const res = await fetch(`${OLLAMA_HOST}/api/pull`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          stream: true,
+        }),
+        signal: abortController.signal,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Ollama API error: ${res.statusText}`);
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        throw new Error('Response body is not readable.');
+      }
+
+      const decoder = new TextDecoder();
+
+      while (!isCancelled) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const textChunk = decoder.decode(value, { stream: true });
+        const lines = textChunk.split('\n');
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const parsed = JSON.parse(line);
+            onProgress({
+              status: parsed.status,
+              digest: parsed.digest,
+              total: parsed.total,
+              completed: parsed.completed,
+            });
+            if (parsed.status === 'success') {
+              onDone();
+            }
+          } catch (err) {
+            // Ignore parse errors for partial lines
+          }
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError' && !isCancelled) {
+        onError(err);
+      }
+    }
+  };
+
+  runPull();
+
+  return () => {
+    isCancelled = true;
+    abortController.abort();
+  };
+}

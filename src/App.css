@@ -2287,6 +2287,312 @@
   background: var(--brand-500);
 }
 
+.status-model-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.copilot-download-toggle-btn {
+  background: var(--bg-sheet);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  height: 22px;
+  width: 22px;
+  transition: all var(--transition-fast);
+}
+
+.copilot-download-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--word-blue);
+  border-color: var(--word-blue-hover);
+}
+
+.copilot-download-toggle-btn.active {
+  background: var(--word-blue-light);
+  color: var(--word-blue);
+  border-color: var(--word-blue);
+}
+
+/* Model Downloader Card styling */
+.model-downloader-card {
+  margin: 12px 12px 0 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.downloader-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+}
+
+.downloader-header span {
+  font-family: 'Outfit', var(--font-sans);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.downloader-header-icon {
+  color: var(--brand-500);
+  margin-right: 6px;
+}
+
+.downloader-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.downloader-close:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-main);
+}
+
+.downloader-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.downloader-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.downloader-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.downloader-select {
+  font-size: 11.5px;
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-sheet);
+  color: var(--text-main);
+  outline: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.downloader-text-input {
+  font-size: 11.5px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-sheet);
+  color: var(--text-main);
+  outline: none;
+}
+
+.downloader-text-input:focus {
+  border-color: var(--word-blue);
+}
+
+.downloader-help-link {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.downloader-help-link a {
+  color: var(--word-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.downloader-help-link a:hover {
+  text-decoration: underline;
+}
+
+/* Pull Progress Panel styles */
+.pull-progress-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.pull-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.pull-status-text {
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80%;
+}
+
+.pull-percentage-text {
+  color: var(--word-blue);
+}
+
+.pull-progress-bar-bg {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.pull-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--word-blue), var(--brand-500));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 6px var(--word-blue-light);
+}
+
+.pull-bytes-row {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.downloader-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.btn-downloader-start {
+  background: var(--word-blue);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.btn-downloader-start:hover:not(:disabled) {
+  background: var(--word-blue-hover);
+}
+
+.btn-downloader-start:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-downloader-cancel {
+  background: transparent;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: HSL(360, 80%, 50%);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-downloader-cancel:hover {
+  background: rgba(220, 38, 38, 0.05);
+}
+
+/* Badge embedded button */
+.hw-download-btn {
+  align-self: flex-start;
+  margin-top: 6px;
+  background: transparent;
+  border: 1px solid var(--brand-350);
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--brand-700);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+
+.hw-download-btn:hover:not(:disabled) {
+  border-color: var(--word-blue);
+  color: var(--word-blue);
+  background: var(--word-blue-light);
+}
+
+/* Dark mode overrides for Downloader Card */
+[data-theme='dark'] .copilot-download-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .copilot-download-toggle-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--brand-300);
+  border-color: var(--brand-450);
+}
+
+[data-theme='dark'] .model-downloader-card {
+  background: rgba(30, 30, 35, 0.85);
+  border-color: var(--border-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .downloader-close:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .pull-progress-panel {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+[data-theme='dark'] .pull-progress-bar-bg {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .hw-download-btn {
+  border-color: var(--border-color);
+  color: var(--brand-200);
+}
+
+[data-theme='dark'] .hw-download-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
 /* ==========================================
    7. OLLAMA INSTALLATION ASSISTANT MODAL
    ========================================== */

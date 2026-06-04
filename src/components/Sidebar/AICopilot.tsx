@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { 
   Sparkles, Send, Bot, User, Settings, RefreshCw, Cpu, 
-  CornerDownLeft, FileText, Clipboard, AlertCircle, ToggleLeft, ToggleRight 
+  CornerDownLeft, FileText, Clipboard, AlertCircle, ToggleLeft, ToggleRight,
+  Download, X
 } from 'lucide-react';
 import { 
   checkOllamaStatus, launchLocalOllama, fetchLocalModels, 
-  streamOllamaChat, getControlApiUrl
+  streamOllamaChat, getControlApiUrl, streamOllamaPull
 } from '../../utils/ollama';
-import type { OllamaMessage } from '../../utils/ollama';
+import type { OllamaMessage, PullProgress } from '../../utils/ollama';
 import { detectHardware, detectOS } from '../../utils/hardware';
 import type { HardwareProfile, OSDetails } from '../../utils/hardware';
 import { 
@@ -43,6 +44,15 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('gemma4:2b');
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
+
+  // Model downloader states
+  const [showDownloader, setShowDownloader] = useState<boolean>(false);
+  const [isPulling, setIsPulling] = useState<boolean>(false);
+  const [downloadModelName, setDownloadModelName] = useState<string>('gemma2:2b');
+  const [customModelName, setCustomModelName] = useState<string>('');
+  const [pullProgress, setPullProgress] = useState<PullProgress | null>(null);
+  const [pullPercentage, setPullPercentage] = useState<number>(0);
+  const cancelPullRef = useRef<(() => void) | null>(null);
 
   // Hardware and OS states
   const [hardware, setHardware] = useState<HardwareProfile | null>(null);
@@ -187,6 +197,60 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     } else {
       setIsLaunching(false);
       setShowInstallModal(true); // Instantly open helper if not found or launch failed
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (cancelStreamRef.current) cancelStreamRef.current();
+      if (cancelPullRef.current) cancelPullRef.current();
+    };
+  }, []);
+
+  const handleStartPull = async () => {
+    const targetModel = downloadModelName === 'custom' ? customModelName.trim() : downloadModelName;
+    if (!targetModel) return;
+
+    setIsPulling(true);
+    setPullProgress({ status: 'Initiating download...' });
+    setPullPercentage(0);
+
+    const cancel = await streamOllamaPull(
+      targetModel,
+      (progress) => {
+        setPullProgress(progress);
+        if (progress.total && progress.completed) {
+          const pct = Math.round((progress.completed / progress.total) * 100);
+          setPullPercentage(pct);
+        }
+      },
+      () => {
+        setIsPulling(false);
+        setPullProgress(null);
+        setPullPercentage(0);
+        setShowDownloader(false);
+        runConnectionCheck();
+        setSelectedModel(targetModel);
+        alert(`Successfully downloaded ${getFriendlyModelName(targetModel)}!`);
+      },
+      (err) => {
+        console.error('Failed to download model:', err);
+        setIsPulling(false);
+        setPullProgress({ status: `Error: ${err.message || 'Download failed'}` });
+        setPullPercentage(0);
+      }
+    );
+
+    cancelPullRef.current = cancel;
+  };
+
+  const handleCancelPull = () => {
+    if (cancelPullRef.current) {
+      cancelPullRef.current();
+      cancelPullRef.current = null;
+      setIsPulling(false);
+      setPullProgress(null);
+      setPullPercentage(0);
     }
   };
 
@@ -541,20 +605,123 @@ Response: Certainly, I will delete the outdated paragraph.
         </div>
         
         {isConnected ? (
-          <select 
-            className="copilot-model-select"
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-          >
-            {models.map(m => <option key={m} value={m}>{m}</option>)}
-            {models.length === 0 && <option value="gemma4:2b">gemma4:2b</option>}
-          </select>
+          <div className="status-model-row">
+            <select 
+              className="copilot-model-select"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+            >
+              {models.map(m => <option key={m} value={m}>{m}</option>)}
+              {models.length === 0 && <option value="gemma4:2b">gemma4:2b</option>}
+            </select>
+            <button 
+              className={`copilot-download-toggle-btn ${showDownloader ? 'active' : ''}`}
+              onClick={() => setShowDownloader(!showDownloader)}
+              title="Download new models"
+            >
+              <Download size={13} />
+            </button>
+          </div>
         ) : (
           <button onClick={runConnectionCheck} className="copilot-refresh-btn" title="Retry Check">
             <RefreshCw size={13} className={isChecking ? 'spinning' : ''} />
           </button>
         )}
       </div>
+
+      {/* Model Downloader Card */}
+      {isConnected && showDownloader && (
+        <div className="model-downloader-card">
+          <div className="downloader-header">
+            <Sparkles size={14} className="downloader-header-icon" />
+            <span>Download Offline Models</span>
+            <button onClick={() => setShowDownloader(false)} className="downloader-close" disabled={isPulling}>
+              <X size={14} />
+            </button>
+          </div>
+          
+          <div className="downloader-body">
+            <div className="downloader-field-group">
+              <label className="downloader-label">Select standard model:</label>
+              <select 
+                value={downloadModelName}
+                onChange={(e) => {
+                  setDownloadModelName(e.target.value);
+                  setCustomModelName('');
+                }}
+                className="downloader-select"
+                disabled={isPulling}
+              >
+                <option value="gemma2:2b">Gemma 2 2B (2.0 GB - Recommended for integrated GPUs)</option>
+                <option value="llama3.2:3b">Llama 3.2 3B (2.0 GB - Excellent general writer)</option>
+                <option value="llama3.2:1b">Llama 3.2 1B (1.3 GB - Ultra lightweight)</option>
+                <option value="qwen2.5-coder:7b">Qwen 2.5 Coder 7B (4.7 GB - Best for editing)</option>
+                <option value="gemma2:9b">Gemma 2 9B (5.5 GB - Smart, needs GPU)</option>
+                <option value="custom">Custom model tag...</option>
+              </select>
+            </div>
+
+            {downloadModelName === 'custom' && (
+              <div className="downloader-field-group animate-slide-down">
+                <label className="downloader-label">Enter Ollama tag name:</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g., mistral:latest, phi3:3.8b"
+                  value={customModelName}
+                  onChange={(e) => setCustomModelName(e.target.value)}
+                  className="downloader-text-input"
+                  disabled={isPulling}
+                />
+                <small className="downloader-help-link">
+                  Browse models on the <a href="https://ollama.com/library" target="_blank" rel="noreferrer">Ollama Library</a>
+                </small>
+              </div>
+            )}
+
+            {/* Pull Progress indicator */}
+            {pullProgress && (
+              <div className="pull-progress-panel">
+                <div className="pull-status-row">
+                  <span className="pull-status-text">
+                    {pullProgress.status}
+                    {pullProgress.digest && ` [${pullProgress.digest.slice(0, 7)}]`}
+                  </span>
+                  {pullPercentage > 0 && <span className="pull-percentage-text">{pullPercentage}%</span>}
+                </div>
+                
+                <div className="pull-progress-bar-bg">
+                  <div 
+                    className="pull-progress-bar-fill"
+                    style={{ width: `${pullPercentage}%` }}
+                  />
+                </div>
+                
+                {pullProgress.total && pullProgress.completed && (
+                  <div className="pull-bytes-row">
+                    <span>{(pullProgress.completed / 1024 / 1024).toFixed(1)} MB / {(pullProgress.total / 1024 / 1024).toFixed(1)} MB</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="downloader-actions">
+              {isPulling ? (
+                <button onClick={handleCancelPull} className="btn-downloader-cancel">
+                  Cancel Download
+                </button>
+              ) : (
+                <button 
+                  onClick={handleStartPull} 
+                  className="btn-downloader-start"
+                  disabled={downloadModelName === 'custom' && !customModelName.trim()}
+                >
+                  Start Download
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Connection Troubleshooting card */}
       {!isConnected && !isChecking && (
@@ -606,6 +773,20 @@ Response: Certainly, I will delete the outdated paragraph.
           </div>
           <p className="hw-info"><strong>GPU:</strong> {hardware.gpuName} (~{hardware.estimatedVramGb}GB VRAM)</p>
           <p className="hw-recommend"><strong>Recommendation:</strong> Use <code>{hardware.recommendedModel}</code>. {hardware.reason}</p>
+          {!(models.includes(hardware.recommendedModel) || models.some(m => m.startsWith(hardware.recommendedModel))) && (
+            <button 
+              onClick={() => {
+                setDownloadModelName('custom');
+                setCustomModelName(hardware.recommendedModel);
+                setShowDownloader(true);
+              }}
+              className="hw-download-btn"
+              disabled={isPulling}
+            >
+              <Download size={11} />
+              <span>Download Recommended Model</span>
+            </button>
+          )}
         </div>
       )}
 
