@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { 
   checkOllamaStatus, launchLocalOllama, fetchLocalModels, 
-  streamOllamaChat
+  streamOllamaChat, getControlApiUrl
 } from '../../utils/ollama';
 import type { OllamaMessage } from '../../utils/ollama';
 import { detectHardware, detectOS } from '../../utils/hardware';
@@ -32,7 +32,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [selectedOS, setSelectedOS] = useState<'Windows' | 'macOS' | 'Linux'>('Windows');
   const [downloadStarted, setDownloadStarted] = useState<boolean>(false);
 
-  const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const [isControlApiAvailable, setIsControlApiAvailable] = useState<boolean>(false);
 
   // Chat settings
   const [temperature, setTemperature] = useState<number>(0.7);
@@ -67,6 +67,11 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   // Ollama connection polling
   const runConnectionCheck = async () => {
     setIsChecking(true);
+    
+    // Check if the control API is available
+    const controlUrl = await getControlApiUrl();
+    setIsControlApiAvailable(!!controlUrl);
+
     const status = await checkOllamaStatus();
     setIsConnected(status);
     setIsChecking(false);
@@ -98,6 +103,10 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     const interval = setInterval(async () => {
       const status = await checkOllamaStatus();
       setIsConnected(status);
+      
+      // Also update control API availability status
+      const controlUrl = await getControlApiUrl();
+      setIsControlApiAvailable(!!controlUrl);
     }, 10000);
     return () => clearInterval(interval);
   }, [hardware]);
@@ -325,7 +334,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
             <h4>Local LLM Client Off</h4>
             <p>Ollama was not detected running on port 11434.</p>
             <div className="alert-actions flex-wrap">
-              {isLocalEnv ? (
+              {isControlApiAvailable ? (
                 <button 
                   onClick={handleLaunchOllama} 
                   className="btn-alert-primary"

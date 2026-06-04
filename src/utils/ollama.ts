@@ -10,6 +10,41 @@ export interface OllamaOptions {
 
 const OLLAMA_HOST = 'http://localhost:11434';
 
+let cachedControlUrl: string | null = null;
+
+/**
+ * Dynamically check candidate endpoints for the Vite dev control server
+ * to find where the local launcher bridge is listening.
+ */
+export async function getControlApiUrl(): Promise<string | null> {
+  if (cachedControlUrl) return cachedControlUrl;
+
+  const candidates = [
+    '/api/ollama-control',
+    'http://localhost:5173/api/ollama-control',
+    'http://127.0.0.1:5173/api/ollama-control',
+    'http://localhost:5174/api/ollama-control',
+    'http://localhost:5175/api/ollama-control'
+  ];
+
+  for (const url of candidates) {
+    try {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), 600);
+      const res = await fetch(url, { method: 'GET', signal: controller.signal }).catch(() => null);
+      clearTimeout(id);
+      if (res && res.ok) {
+        cachedControlUrl = url;
+        return url;
+      }
+    } catch {
+      // Ignore and try next candidate
+    }
+  }
+
+  return null;
+}
+
 /**
  * Check if Ollama is running, first through our dev server API proxy, 
  * then falling back to direct network connection to Ollama's default port.
@@ -17,12 +52,15 @@ const OLLAMA_HOST = 'http://localhost:11434';
 export async function checkOllamaStatus(): Promise<boolean> {
   try {
     // 1. Try Vite dev server bridge first
-    const proxyRes = await fetch('/api/ollama-control', { method: 'GET' }).catch(() => null);
-    if (proxyRes && proxyRes.ok) {
-      const data = await proxyRes.json();
-      if (data.running) return true;
+    const controlUrl = await getControlApiUrl();
+    if (controlUrl) {
+      const proxyRes = await fetch(controlUrl, { method: 'GET' }).catch(() => null);
+      if (proxyRes && proxyRes.ok) {
+        const data = await proxyRes.json();
+        if (data.running) return true;
+      }
     }
-  } catch (err) {
+  } catch {
     // Ignore proxy error, fall back to direct ping
   }
 
@@ -30,7 +68,7 @@ export async function checkOllamaStatus(): Promise<boolean> {
     // 2. Direct CORS check to local Ollama instance
     const directRes = await fetch(`${OLLAMA_HOST}/`, { method: 'GET' });
     return directRes.ok || directRes.status === 404;
-  } catch (err) {
+  } catch {
     return false;
   }
 }
@@ -40,7 +78,12 @@ export async function checkOllamaStatus(): Promise<boolean> {
  */
 export async function launchLocalOllama(): Promise<boolean> {
   try {
-    const res = await fetch('/api/ollama-control', {
+    const controlUrl = await getControlApiUrl();
+    if (!controlUrl) {
+      console.error('No local control API available to trigger launch.');
+      return false;
+    }
+    const res = await fetch(controlUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'launch' }),

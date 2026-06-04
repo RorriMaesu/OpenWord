@@ -42,6 +42,16 @@ export default defineConfig({
       name: 'ollama-launcher',
       configureServer(server) {
         server.middlewares.use('/api/ollama-control', (req, res, next) => {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+          if (req.method === 'OPTIONS') {
+            res.writeHead(204);
+            res.end();
+            return;
+          }
+
           if (req.method === 'POST') {
             let body = '';
             req.on('data', chunk => { body += chunk; });
