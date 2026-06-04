@@ -196,7 +196,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
       </div>
 
       {/* Tab Contents */}
-      <div className="sidebar-content">
+      <div className={`sidebar-content ${activeTab === 'copilot' ? 'copilot-tab-active' : ''}`}>
         
         {/* Navigation / Outline Tab */}
         {activeTab === 'outline' && (

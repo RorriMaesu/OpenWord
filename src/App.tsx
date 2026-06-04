@@ -143,7 +143,7 @@ const AppContent: React.FC = () => {
       />
 
       {/* 2. Workspace & Sidebars */}
-      <div className="app-main-workspace">
+      <div className={`app-main-workspace ${showSidebar ? 'sidebar-open' : 'sidebar-closed'}`}>
         {/* Main Tiptap Canvas */}
         <div className="editor-canvas-wrapper">
           <Editor

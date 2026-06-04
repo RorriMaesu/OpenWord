@@ -12,10 +12,17 @@
 
 .app-main-workspace {
   display: grid;
-  grid-template-columns: 1fr auto;
   height: 100%;
   overflow: hidden;
   position: relative;
+}
+
+.app-main-workspace.sidebar-closed {
+  grid-template-columns: 1fr;
+}
+
+.app-main-workspace.sidebar-open {
+  grid-template-columns: 1fr 320px;
 }
 
 /* 1. RIBBON TOOLBAR & CONTROLS */
@@ -966,7 +973,7 @@
 
 /* 5. COLLAPSIBLE SIDEBAR PANEL */
 .sidebar-container {
-  width: 300px;
+  width: 100%;
   height: 100%;
   border-left: 1px solid var(--border-color);
   background: var(--bg-sheet);
@@ -1013,6 +1020,14 @@
 .sidebar-content {
   overflow-y: auto;
   padding: 16px;
+}
+
+.sidebar-content.copilot-tab-active {
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .pane-title {
