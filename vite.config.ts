@@ -203,5 +203,12 @@ export default defineConfig({
       }
     }
   ],
+  server: {
+    cors: {
+      origin: '*',
+      methods: 'GET,POST,OPTIONS',
+      allowedHeaders: 'Content-Type'
+    }
+  },
   base: '/OpenWord/',
 })
