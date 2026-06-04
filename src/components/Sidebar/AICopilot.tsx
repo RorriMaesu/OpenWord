@@ -129,7 +129,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     setIsLaunching(true);
     const launched = await launchLocalOllama();
     if (launched) {
-      // Poll rapidly for 5 seconds to detect startup
+      // Poll rapidly for 10 seconds to detect startup
       let attempts = 0;
       const interval = setInterval(async () => {
         const status = await checkOllamaStatus();
@@ -139,9 +139,10 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
           setIsLaunching(false);
           clearInterval(interval);
           runConnectionCheck();
-        } else if (attempts >= 10) {
+        } else if (attempts >= 20) {
           setIsLaunching(false);
           clearInterval(interval);
+          setShowInstallModal(true); // Open modal helper if startup failed to connect
         }
       }, 500);
     } else {

@@ -5,6 +5,35 @@ import http from 'http'
 import fs from 'fs'
 import path from 'path'
 
+// Helper to recursively find files matching a regex pattern
+function findFileRegex(dir: string, pattern: RegExp, maxDepth = 3, currentDepth = 0): string | null {
+  if (currentDepth > maxDepth) return null;
+  if (!fs.existsSync(dir)) return null;
+
+  try {
+    const files = fs.readdirSync(dir, { withFileTypes: true });
+    
+    // 1. Scan files in current directory
+    for (const file of files) {
+      if (file.isFile() && pattern.test(file.name)) {
+        return path.join(dir, file.name);
+      }
+    }
+    
+    // 2. Scan subdirectories recursively
+    for (const file of files) {
+      if (file.isDirectory() && !file.name.startsWith('.')) {
+        const subDir = path.join(dir, file.name);
+        const found = findFileRegex(subDir, pattern, maxDepth, currentDepth + 1);
+        if (found) return found;
+      }
+    }
+  } catch {
+    // Fail silently on permission/system access issues
+  }
+  return null;
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -28,16 +57,21 @@ export default defineConfig({
                     const programData = process.env.ProgramData || 'C:\\ProgramData';
                     const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
 
-                    const winPaths = [
-                      path.join(localAppData, 'Programs', 'Ollama', 'ollama app.exe'),
-                      path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Ollama.lnk'),
-                      path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Ollama', 'Ollama.lnk'),
-                      path.join(programData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Ollama.lnk'),
-                      path.join(programData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Ollama', 'Ollama.lnk'),
-                      path.join(programFiles, 'Ollama', 'ollama.exe')
+                    const winRoots = [
+                      { dir: path.join(localAppData, 'Programs'), depth: 3 },
+                      { dir: path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs'), depth: 3 },
+                      { dir: path.join(programData, 'Microsoft', 'Windows', 'Start Menu', 'Programs'), depth: 3 },
+                      { dir: programFiles, depth: 2 }
                     ];
 
-                    const foundPath = winPaths.find(p => fs.existsSync(p));
+                    const pattern = /^ollama(\s+app)?\.(exe|lnk)$/i;
+                    let foundPath: string | null = null;
+                    
+                    for (const root of winRoots) {
+                      foundPath = findFileRegex(root.dir, pattern, root.depth);
+                      if (foundPath) break;
+                    }
+
                     if (foundPath) {
                       launchCommand = `start "" "${foundPath}"`;
                     } else {
@@ -45,11 +79,18 @@ export default defineConfig({
                     }
                   } else if (process.platform === 'darwin') {
                     const home = process.env.HOME || '';
-                    const macPaths = [
-                      '/Applications/Ollama.app',
-                      path.join(home, 'Applications', 'Ollama.app')
+                    const macRoots = [
+                      { dir: '/Applications', depth: 1 },
+                      { dir: path.join(home, 'Applications'), depth: 2 }
                     ];
-                    const foundPath = macPaths.find(p => fs.existsSync(p));
+                    const pattern = /^Ollama\.app$/i;
+                    let foundPath: string | null = null;
+
+                    for (const root of macRoots) {
+                      foundPath = findFileRegex(root.dir, pattern, root.depth);
+                      if (foundPath) break;
+                    }
+
                     if (foundPath) {
                       launchCommand = `open -a "${foundPath}"`;
                     } else {
@@ -58,13 +99,20 @@ export default defineConfig({
                   } else {
                     // Linux
                     const home = process.env.HOME || '';
-                    const linuxPaths = [
-                      '/usr/local/bin/ollama',
-                      '/usr/bin/ollama',
-                      path.join(home, '.local', 'bin', 'ollama'),
-                      path.join(home, 'bin', 'ollama')
+                    const linuxRoots = [
+                      { dir: '/usr/local/bin', depth: 1 },
+                      { dir: '/usr/bin', depth: 1 },
+                      { dir: path.join(home, '.local', 'bin'), depth: 2 },
+                      { dir: path.join(home, 'bin'), depth: 2 }
                     ];
-                    const foundPath = linuxPaths.find(p => fs.existsSync(p));
+                    const pattern = /^ollama$/i;
+                    let foundPath: string | null = null;
+
+                    for (const root of linuxRoots) {
+                      foundPath = findFileRegex(root.dir, pattern, root.depth);
+                      if (foundPath) break;
+                    }
+
                     if (foundPath) {
                       launchCommand = `nohup "${foundPath}" serve > /dev/null 2>&1 &`;
                     } else {
