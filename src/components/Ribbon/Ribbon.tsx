@@ -290,13 +290,6 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <button onClick={() => fileInputRef.current?.click()} className="tool-btn-large">
                   <FolderOpen size={20} />
                   <span>Open</span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".docx,.md,.markdown,.txt,.html"
-                    style={{ display: 'none' }}
-                    onChange={handleImportFile}
-                  />
                 </button>
                 <button onClick={saveActiveFile} className="tool-btn-large">
                   <Save size={20} />
@@ -753,6 +746,13 @@ export const Ribbon: React.FC<RibbonProps> = ({
           </div>
         )}
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".docx,.md,.markdown,.txt,.html"
+        style={{ display: 'none' }}
+        onChange={handleImportFile}
+      />
     </div>
   );
 };
