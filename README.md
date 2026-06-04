@@ -39,6 +39,15 @@ Unlike standard cloud word processors, OpenWord is an **offline-first, zero-serv
 *   **Sidebar Navigation Outline:** Auto-updating outline list based on heading tags to navigate large documents quickly.
 *   **Aesthetic Theme Selector:** Seamless light-to-dark canvas transition via the bottom Status Bar.
 
+### 🤖 Local Offline AI Copilot
+*   **Zero-Server Offline Collaboration:** Connects directly to a local [Ollama](https://ollama.com) instance running Gemma, Llama, Qwen, or other models to assist with drafting, rewriting, and expanding.
+*   **Dual Document-Editing Modes:**
+    - **Direct Edit Mode (Real-Time):** Streams AI edits directly into the document editor in real-time using a cursor-stable block shifter.
+    - **Proposal Mode (Visual Diff):** Streams changes to a sidebar visual diff card (rendered with green/red additions/deletions), allowing you to review edits and click **Accept & Apply** or **Reject** before mutating the document.
+*   **Robust XML Tool Actions:** Parses structural document actions (`<edit_block>`, `<insert_block>`, `<delete_block>`) dynamically, supporting arbitrary attribute order, spacing, and quote styles.
+*   **Hardware and OS Profiler:** Detects GPU VRAM and OS details at startup to recommend the most optimal model size (e.g., Gemma 2B for lighter GPUs).
+*   **Speculative MTP Decoding Toggle:** Activates speculative token predictions to accelerate output text stream speeds.
+
 ### 🔒 Client-Side Storage & IO
 *   **IndexedDB Autosave:** Background saving to IndexedDB (v2) with an automatic session recovery dialog on startup.
 *   **Zero-Server Exports:** Export documents directly to Microsoft Word `.docx` format using client-side XML packaging.
