@@ -581,7 +581,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
                         <li>Verify Ollama is active by checking for the logo icon in your system tray.</li>
                       </ol>
                       <a 
-                        href="https://ollama.com/download/windows" 
+                        href="https://ollama.com/download/OllamaSetup.exe" 
                         target="_blank" 
                         rel="noreferrer"
                         className="btn-download-action"
@@ -594,12 +594,12 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
                   {selectedOS === 'macOS' && (
                     <div className="instruction-pane">
                       <ol className="step-list">
-                        <li>Download the official macOS app archive.</li>
-                        <li>Unzip the downloaded file and drag the <code>Ollama</code> app to your <strong>Applications</strong> directory.</li>
+                        <li>Download the official macOS app installer.</li>
+                        <li>Open the <code>Ollama.dmg</code> file and drag the <code>Ollama</code> app into your <strong>Applications</strong> directory.</li>
                         <li>Run Ollama to complete configuration and open access points.</li>
                       </ol>
                       <a 
-                        href="https://ollama.com/download/mac" 
+                        href="https://ollama.com/download/Ollama.dmg" 
                         target="_blank" 
                         rel="noreferrer"
                         className="btn-download-action"

@@ -179,10 +179,10 @@ export function detectOS(): OSDetails {
   if (/mac/i.test(platform) || /macintosh|mac os x/i.test(ua)) {
     return {
       osName: 'macOS',
-      downloadUrl: 'https://ollama.com/download/mac',
+      downloadUrl: 'https://ollama.com/download/Ollama.dmg',
       instructions: [
-        'Download the official ZIP archive (Ollama-darwin.zip).',
-        'Extract the archive and drag the Ollama application into your Applications folder.',
+        'Download the official macOS app installer (Ollama.dmg).',
+        'Open the DMG file and drag the Ollama application into your Applications folder.',
         'Launch the Ollama app to register commands and start the local service.'
       ]
     };
@@ -200,7 +200,7 @@ export function detectOS(): OSDetails {
   } else {
     return {
       osName: 'Windows',
-      downloadUrl: 'https://ollama.com/download/windows',
+      downloadUrl: 'https://ollama.com/download/OllamaSetup.exe',
       instructions: [
         'Download the official Windows installer (OllamaSetup.exe).',
         'Run the setup wizard and follow the install prompts.',
