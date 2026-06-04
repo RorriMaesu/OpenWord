@@ -56,6 +56,21 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
             const children = dom.childNodes;
             if (children.length === 0) return;
 
+            // Mobile/Pageless performance bypass: Skip layout loop if pageless mode is active
+            const workspaceContainer = document.querySelector('.editor-workspace-container');
+            const isPageless = workspaceContainer ? workspaceContainer.classList.contains('pageless-mode') : true;
+            if (isPageless) {
+              const decorationSet = DecorationSet.empty;
+              editorView.dispatch(editorView.state.tr.setMeta(VirtualPaginationKey, decorationSet));
+              document.dispatchEvent(new CustomEvent('openword-pagination-update', {
+                detail: {
+                  totalPages: 1,
+                  posPages: [{ pos: 0, page: 1 }]
+                }
+              }));
+              return;
+            }
+
             let heightHash = '';
             const childHeights: { pos: number; height: number; isPageBreakNode: boolean }[] = [];
 

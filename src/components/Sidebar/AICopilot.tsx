@@ -26,6 +26,7 @@ import {
   isEngineLoaded, streamWebGPUChat 
 } from '../../utils/webllm';
 import type { EdgeModel } from '../../utils/webllm';
+import { useIsMobile } from '../../utils/useIsMobile';
 
 interface AICopilotProps {
   editor: Editor | null;
@@ -43,6 +44,7 @@ interface ExtendedMessage {
 
 
 export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
+  const isMobile = useIsMobile();
   // Connection and model states
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(true);
@@ -1074,6 +1076,19 @@ Response: Certainly, I will delete the outdated paragraph.
               <li>Ensure hardware acceleration is enabled in browser settings.</li>
               <li>Or toggle back to <strong>Ollama (Daemon)</strong> mode above if you have Ollama installed.</li>
             </ol>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile WebGPU memory warning card */}
+      {modelMode === 'webgpu' && isMobile && isWebGPUAvailable && (
+        <div className="copilot-connection-alert webgpu-mobile-warning">
+          <AlertCircle className="alert-icon" size={18} />
+          <div className="alert-body">
+            <h4>Mobile Browser Warning</h4>
+            <p>
+              Running local WebGPU engines inside mobile browsers is resource-intensive and may trigger memory-limit page crashes (tab reload). For a smooth co-writing experience on mobile devices, connect via remote Ollama endpoints or cloud models.
+            </p>
           </div>
         </div>
       )}

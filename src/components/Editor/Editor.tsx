@@ -19,6 +19,7 @@ import { PageBreakExtension } from './PageBreakExtension';
 import { SearchReplaceExtension } from './SearchReplaceExtension';
 import { VirtualPaginationExtension } from './VirtualPaginationExtension';
 import { Ruler } from '../Ruler/Ruler';
+import { useIsMobile } from '../../utils/useIsMobile';
 
 // Custom TextStyle extension to handle inline font size attribute
 const CustomTextStyle = TextStyle.extend({
@@ -50,6 +51,7 @@ export const Editor: React.FC<EditorProps> = ({
 }) => {
   const { docState, updateContent, saveActiveFile, totalPages, updatePages } = useDocument();
   const { zoom, pageSize, orientation } = docState;
+  const isMobile = useIsMobile();
 
   const posPagesRef = useRef<{ pos: number; page: number }[]>([]);
   const totalPagesRef = useRef(1);
@@ -257,32 +259,32 @@ export const Editor: React.FC<EditorProps> = ({
   return (
     <div 
       ref={workspaceRef}
-      className={`editor-workspace-container ${layoutMode === 'print' ? 'print-mode' : 'pageless-mode'}`}
+      className={`editor-workspace-container ${isMobile ? 'mobile-mode pageless-mode' : (layoutMode === 'print' ? 'print-mode' : 'pageless-mode')}`}
     >
-      {/* Visual top ruler matching document scale */}
-      {layoutMode === 'print' && showRuler && <Ruler />}
+      {/* Visual top ruler matching document scale - Hidden on Mobile */}
+      {layoutMode === 'print' && showRuler && !isMobile && <Ruler />}
 
-      {/* Editor zooming framework */}
+      {/* Editor zooming framework - Bypassed on Mobile */}
       <div 
         className="editor-zoom-wrapper"
         style={{
-          transform: `scale(${zoom})`,
+          transform: isMobile ? 'none' : `scale(${zoom})`,
           transformOrigin: 'top center',
-          width: layoutMode === 'print' ? `${width}px` : '100%',
+          width: (layoutMode === 'print' && !isMobile) ? `${width}px` : '100%',
         }}
       >
         <div 
           className="editor-sheet-canvas"
           style={{
-            width: layoutMode === 'print' ? `${width}px` : '100%',
-            paddingTop: layoutMode === 'print' ? 'var(--page-margin-top)' : '40px',
-            paddingBottom: layoutMode === 'print' ? 'var(--page-margin-bottom)' : '40px',
-            paddingLeft: layoutMode === 'print' ? 'var(--page-margin-left)' : 'max(40px, calc((100% - 800px) / 2))',
-            paddingRight: layoutMode === 'print' ? 'var(--page-margin-right)' : 'max(40px, calc((100% - 800px) / 2))',
+            width: (layoutMode === 'print' && !isMobile) ? `${width}px` : '100%',
+            paddingTop: (layoutMode === 'print' && !isMobile) ? 'var(--page-margin-top)' : '20px',
+            paddingBottom: (layoutMode === 'print' && !isMobile) ? 'var(--page-margin-bottom)' : '20px',
+            paddingLeft: (layoutMode === 'print' && !isMobile) ? 'var(--page-margin-left)' : (isMobile ? '16px' : 'max(40px, calc((100% - 800px) / 2))'),
+            paddingRight: (layoutMode === 'print' && !isMobile) ? 'var(--page-margin-right)' : (isMobile ? '16px' : 'max(40px, calc((100% - 800px) / 2))'),
           }}
         >
-          {/* Header visual indicator */}
-          {layoutMode === 'print' && docState.headers.default && (
+          {/* Header visual indicator - Hidden on Mobile */}
+          {layoutMode === 'print' && !isMobile && docState.headers.default && (
             <div 
               className="editor-header-overlay"
               style={{
@@ -298,8 +300,8 @@ export const Editor: React.FC<EditorProps> = ({
           {/* Core Tiptap Content area */}
           <EditorContent editor={editor} />
 
-          {/* Footer visual indicator */}
-          {layoutMode === 'print' && (docState.footers.default || totalPages) && (
+          {/* Footer visual indicator - Hidden on Mobile */}
+          {layoutMode === 'print' && !isMobile && (docState.footers.default || totalPages) && (
             <div 
               className="editor-footer-overlay"
               style={{

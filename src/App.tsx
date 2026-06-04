@@ -6,10 +6,12 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { HeaderFooterManager } from './components/Editor/HeaderFooterManager';
 import { Editor as TiptapEditor } from '@tiptap/react';
-import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee } from 'lucide-react';
+import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles } from 'lucide-react';
 import { getDocument, deleteDocument } from './utils/db';
 import './App.css';
 import { TutorialTour } from './components/Tutorial/TutorialTour';
+import { useIsMobile } from './utils/useIsMobile';
+import { MobileFormatter } from './components/MobileFormatter';
 
 const AppContent: React.FC = () => {
   const { 
@@ -19,11 +21,14 @@ const AppContent: React.FC = () => {
     restoreAutosave, 
     updateLayoutMode,
     autoSaveEnabled,
-    setAutoSaveEnabled
+    setAutoSaveEnabled,
+    createNewDocument,
+    saveAsNewFile
   } = useDocument();
   
   // Editor instance reference
   const [editor, setEditor] = useState<TiptapEditor | null>(null);
+  const isMobile = useIsMobile();
 
   // App Layout options
   const [layoutMode, setLayoutMode] = useState<'pageless' | 'print'>(() => {
@@ -34,7 +39,10 @@ const AppContent: React.FC = () => {
     const saved = localStorage.getItem('openword_show_ruler');
     return saved !== null ? saved === 'true' : true;
   });
-  const showSidebar = true;
+  const [showSidebar, setShowSidebar] = useState<boolean>(() => {
+    const isMobileSize = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+    return !isMobileSize;
+  });
   const [showHeaderFooter, setShowHeaderFooter] = useState(false);
 
   // Onboarding Tutorial states
@@ -104,115 +112,192 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="app-shell">
-      {/* Microsoft Word Dark Blue Desktop Title Bar */}
-      <div className="word-titlebar no-print">
-        <div className="titlebar-left">
-          {/* App Branding Logo */}
-          <div className="app-brand-logo" title="OpenWord desktop application">
-            <svg viewBox="0 0 24 24" className="app-logo-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#0078d4" />
-                  <stop offset="100%" stopColor="#00b4fc" />
-                </linearGradient>
-              </defs>
-              <path d="M16 2H8C5.79086 2 4 3.79086 4 6V18C4 20.2091 5.79086 22 8 22H16C18.2091 22 20 20.2091 20 18V6C20 3.79086 18.2091 2 16 2Z" fill="url(#logo-grad)" />
-              <circle cx="12" cy="12" r="5" stroke="white" strokeWidth="1.8" strokeDasharray="24 6" strokeLinecap="round" />
-              <path d="M9.5 10L11 14L12 12L13 14L14.5 10" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="app-brand-name">OpenWord</span>
+      {/* Microsoft Word Title Bar (Desktop or Mobile) */}
+      {isMobile ? (
+        <div className="word-titlebar mobile-header no-print">
+          <div className="titlebar-left">
+            <div className="app-brand-logo" onClick={createNewDocument} title="New Document">
+              <svg viewBox="0 0 24 24" className="app-logo-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#0078d4" />
+                    <stop offset="100%" stopColor="#00b4fc" />
+                  </linearGradient>
+                </defs>
+                <path d="M16 2H8C5.79086 2 4 3.79086 4 6V18C4 20.2091 5.79086 22 8 22H16C18.2091 22 20 20.2091 20 18V6C20 3.79086 18.2091 2 16 2Z" fill="url(#logo-grad)" />
+                <circle cx="12" cy="12" r="5" stroke="white" strokeWidth="1.8" strokeDasharray="24 6" strokeLinecap="round" />
+                <path d="M9.5 10L11 14L12 12L13 14L14.5 10" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <select
+              className="mobile-file-menu-select"
+              value=""
+              onChange={async (e) => {
+                const action = e.target.value;
+                if (action === 'new') createNewDocument();
+                else if (action === 'save') await saveActiveFile();
+                else if (action === 'saveas') await saveAsNewFile();
+                else if (action === 'print') window.print();
+                e.target.value = ''; // Reset select element value
+              }}
+            >
+              <option value="" disabled hidden>File</option>
+              <option value="new">New Doc</option>
+              <option value="save">Save</option>
+              <option value="saveas">Save As...</option>
+              <option value="print">Print / PDF</option>
+            </select>
           </div>
 
-          <span className="titlebar-divider" />
-
-          {/* AutoSave toggle switch */}
-          <div className="autosave-toggle-container">
-            <span className="autosave-label">AutoSave</span>
-            <label className="switch">
-              <input 
-                type="checkbox" 
-                checked={autoSaveEnabled} 
-                onChange={(e) => setAutoSaveEnabled(e.target.checked)} 
-              />
-              <span className="switch-slider round"></span>
-            </label>
-            {autoSaveEnabled ? <Cloud size={14} className="cloud-icon active" /> : <CloudOff size={14} className="cloud-icon" />}
+          <div className="titlebar-center">
+            <input
+              type="text"
+              className="titlebar-filename-input"
+              value={docState.title}
+              onChange={(e) => updateTitle(e.target.value)}
+              placeholder="Untitled Document"
+            />
           </div>
 
-          <span className="titlebar-divider" />
-
-          {/* Quick Access Toolbar */}
-          <div className="quick-access-toolbar">
-            <button onClick={() => docState.content && saveActiveFile()} className="titlebar-icon-btn" title="Save (Ctrl+S)">
-              <Save size={14} />
+          <div className="titlebar-right">
+            <button
+              onClick={() => {
+                if (showSidebar && sidebarTab === 'copilot') {
+                  setShowSidebar(false);
+                } else {
+                  setSidebarTab('copilot');
+                  setShowSidebar(true);
+                }
+              }}
+              className={`titlebar-icon-btn ${showSidebar && sidebarTab === 'copilot' ? 'active' : ''}`}
+              title="AI Copilot"
+            >
+              <Sparkles size={16} />
             </button>
-            <button onClick={triggerUndo} className="titlebar-icon-btn" title="Undo (Ctrl+Z)" disabled={!editor?.can().undo()}>
-              <Undo size={14} />
-            </button>
-            <button onClick={triggerRedo} className="titlebar-icon-btn" title="Redo (Ctrl+Y)" disabled={!editor?.can().redo()}>
-              <Redo size={14} />
-            </button>
-            <button onClick={() => window.print()} className="titlebar-icon-btn" title="Print Layout View">
-              <Printer size={14} />
+            <button
+              onClick={() => {
+                if (showSidebar && sidebarTab === 'outline') {
+                  setShowSidebar(false);
+                } else {
+                  setSidebarTab('outline');
+                  setShowSidebar(true);
+                }
+              }}
+              className={`titlebar-icon-btn ${showSidebar && sidebarTab === 'outline' ? 'active' : ''}`}
+              title="Document Outline"
+            >
+              <Search size={16} />
             </button>
           </div>
         </div>
+      ) : (
+        <div className="word-titlebar no-print">
+          <div className="titlebar-left">
+            {/* App Branding Logo */}
+            <div className="app-brand-logo" title="OpenWord desktop application">
+              <svg viewBox="0 0 24 24" className="app-logo-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#0078d4" />
+                    <stop offset="100%" stopColor="#00b4fc" />
+                  </linearGradient>
+                </defs>
+                <path d="M16 2H8C5.79086 2 4 3.79086 4 6V18C4 20.2091 5.79086 22 8 22H16C18.2091 22 20 20.2091 20 18V6C20 3.79086 18.2091 2 16 2Z" fill="url(#logo-grad)" />
+                <circle cx="12" cy="12" r="5" stroke="white" strokeWidth="1.8" strokeDasharray="24 6" strokeLinecap="round" />
+                <path d="M9.5 10L11 14L12 12L13 14L14.5 10" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="app-brand-name">OpenWord</span>
+            </div>
 
-        {/* Center: File Title */}
-        <div className="titlebar-center">
-          <input
-            type="text"
-            className="titlebar-filename-input"
-            value={docState.title}
-            onChange={(e) => updateTitle(e.target.value)}
-            placeholder="Untitled Document"
-          />
-          <span className="titlebar-status-text">.docx - Saved to Device</span>
-        </div>
+            <span className="titlebar-divider" />
 
-        {/* Right: User / Windows Controls */}
-        <div className="titlebar-right">
-          <a 
-            href="https://buymeacoffee.com/rorrimaesu" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="titlebar-support-btn"
-            title="Support OpenWord / Buy Me a Coffee"
-          >
-            <Coffee size={12} className="coffee-icon" />
-            <span>Support</span>
-          </a>
+            {/* AutoSave toggle switch */}
+            <div className="autosave-toggle-container">
+              <span className="autosave-label">AutoSave</span>
+              <label className="switch">
+                <input 
+                  type="checkbox" 
+                  checked={autoSaveEnabled} 
+                  onChange={(e) => setAutoSaveEnabled(e.target.checked)} 
+                />
+                <span className="switch-slider round"></span>
+              </label>
+              {autoSaveEnabled ? <Cloud size={14} className="cloud-icon active" /> : <CloudOff size={14} className="cloud-icon" />}
+            </div>
 
-          <div className="titlebar-search-box">
-            <Search size={12} className="search-icon" />
-            <input type="text" placeholder="Search" />
+            <span className="titlebar-divider" />
+
+            {/* Quick Access Toolbar */}
+            <div className="quick-access-toolbar">
+              <button onClick={() => docState.content && saveActiveFile()} className="titlebar-icon-btn" title="Save (Ctrl+S)">
+                <Save size={14} />
+              </button>
+              <button onClick={triggerUndo} className="titlebar-icon-btn" title="Undo (Ctrl+Z)" disabled={!editor?.can().undo()}>
+                <Undo size={14} />
+              </button>
+              <button onClick={triggerRedo} className="titlebar-icon-btn" title="Redo (Ctrl+Y)" disabled={!editor?.can().redo()}>
+                <Redo size={14} />
+              </button>
+              <button onClick={() => window.print()} className="titlebar-icon-btn" title="Print Layout View">
+                <Printer size={14} />
+              </button>
+            </div>
           </div>
 
+          {/* Center: File Title */}
+          <div className="titlebar-center">
+            <input
+              type="text"
+              className="titlebar-filename-input"
+              value={docState.title}
+              onChange={(e) => updateTitle(e.target.value)}
+              placeholder="Untitled Document"
+            />
+            <span className="titlebar-status-text">.docx - Saved to Device</span>
+          </div>
 
+          {/* Right: User / Windows Controls */}
+          <div className="titlebar-right">
+            <a 
+              href="https://buymeacoffee.com/rorrimaesu" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="titlebar-support-btn"
+              title="Support OpenWord / Buy Me a Coffee"
+            >
+              <Coffee size={12} className="coffee-icon" />
+              <span>Support</span>
+            </a>
 
-          <div className="window-controls">
-            <button className="window-btn" title="Minimize"><Minus size={12} /></button>
-            <button className="window-btn" title="Maximize"><Square size={10} /></button>
-            <button className="window-btn close" title="Close"><X size={12} /></button>
+            <div className="titlebar-search-box">
+              <Search size={12} className="search-icon" />
+              <input type="text" placeholder="Search" />
+            </div>
+
+            <div className="window-controls">
+              <button className="window-btn" title="Minimize"><Minus size={12} /></button>
+              <button className="window-btn" title="Maximize"><Square size={10} /></button>
+              <button className="window-btn close" title="Close"><X size={12} /></button>
+            </div>
           </div>
         </div>
-      </div>
-
-
+      )}
 
       {/* 1. Ribbon Menu Toolbar */}
-      <Ribbon
-        editor={editor}
-        layoutMode={layoutMode}
-        onLayoutModeChange={setLayoutMode}
-        showRuler={showRuler}
-        onShowRulerChange={setShowRuler}
-        onOpenHeaderFooter={() => setShowHeaderFooter(true)}
-        onRelaunchTour={() => setIsTourOpen(true)}
-      />
+      {!isMobile && (
+        <Ribbon
+          editor={editor}
+          layoutMode={layoutMode}
+          onLayoutModeChange={setLayoutMode}
+          showRuler={showRuler}
+          onShowRulerChange={setShowRuler}
+          onOpenHeaderFooter={() => setShowHeaderFooter(true)}
+          onRelaunchTour={() => setIsTourOpen(true)}
+        />
+      )}
 
       {/* 2. Workspace & Sidebars */}
-      <div className={`app-main-workspace ${showSidebar ? 'sidebar-open' : 'sidebar-closed'}`}>
+      <div className={`app-main-workspace ${isMobile ? 'mobile-workspace' : ''} ${showSidebar ? 'sidebar-open' : 'sidebar-closed'}`}>
         {/* Main Tiptap Canvas */}
         <div className="editor-canvas-wrapper">
           <Editor
@@ -232,17 +317,25 @@ const AppContent: React.FC = () => {
         <Sidebar
           editor={editor}
           isOpen={showSidebar}
+          onClose={() => setShowSidebar(false)}
           activeTab={sidebarTab}
           setActiveTab={setSidebarTab}
         />
       </div>
 
       {/* 3. Bottom Status Bar */}
-      <StatusBar
-        editor={editor}
-        layoutMode={layoutMode}
-        onLayoutModeChange={setLayoutMode}
-      />
+      {!isMobile && (
+        <StatusBar
+          editor={editor}
+          layoutMode={layoutMode}
+          onLayoutModeChange={setLayoutMode}
+        />
+      )}
+
+      {/* Mobile Bottom Formatter Toolbar */}
+      {isMobile && (
+        <MobileFormatter editor={editor} />
+      )}
 
       {/* 4. Glassmorphic Auto-Save Recovery Alert Dialog */}
       {showRecoveryAlert && (

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useDocument } from '../../context/DocumentContext';
-import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles, Coffee } from 'lucide-react';
+import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles, Coffee, X } from 'lucide-react';
 import { Editor } from '@tiptap/react';
 import { AICopilot } from './AICopilot';
+import { useIsMobile } from '../../utils/useIsMobile';
 
 interface SidebarProps {
   editor: Editor | null;
   isOpen: boolean;
+  onClose?: () => void;
   activeTab?: 'outline' | 'search' | 'properties' | 'copilot';
   setActiveTab?: (tab: 'outline' | 'search' | 'properties' | 'copilot') => void;
 }
@@ -19,10 +21,12 @@ interface HeadingItem {
 export const Sidebar: React.FC<SidebarProps> = ({ 
   editor, 
   isOpen,
+  onClose,
   activeTab: controlledTab,
   setActiveTab: controlledSetTab
 }) => {
   const { isSaving, isDirty } = useDocument();
+  const isMobile = useIsMobile();
   
   const [localTab, setLocalTab] = useState<'outline' | 'search' | 'properties' | 'copilot'>(() => {
     const saved = localStorage.getItem('openword_sidebar_tab');
@@ -222,14 +226,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div 
-      className="sidebar-container"
-      style={{ width: `${width}px` }}
+      className={`sidebar-container ${isMobile ? 'mobile-drawer' : ''}`}
+      style={isMobile ? {} : { width: `${width}px` }}
     >
-      {/* Draggable Resizer Handle */}
-      <div 
-        className={`sidebar-resizer-handle ${isResizing ? 'active' : ''}`}
-        onMouseDown={startResizing}
-      />
+      {/* Draggable Resizer Handle - Hidden on Mobile */}
+      {!isMobile && (
+        <div 
+          className={`sidebar-resizer-handle ${isResizing ? 'active' : ''}`}
+          onMouseDown={startResizing}
+        />
+      )}
       {/* Sidebar Tabs Selector */}
       <div className="sidebar-tabs">
         <button 
@@ -264,6 +270,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Sparkles size={18} />
           <span>OpenWord AI</span>
         </button>
+        {isMobile && onClose && (
+          <button 
+            className="sidebar-tab sidebar-close-btn"
+            onClick={onClose}
+            title="Close Sidebar Panel"
+          >
+            <X size={18} className="text-danger" />
+            <span>Close</span>
+          </button>
+        )}
       </div>
 
       {/* Tab Contents */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, ArrowRight, ArrowLeft, X } from 'lucide-react';
+import { useIsMobile } from '../../utils/useIsMobile';
 
 interface TourStep {
   target: string;
@@ -14,6 +15,39 @@ interface TutorialTourProps {
   onClose: () => void;
   setSidebarTab: (tab: 'outline' | 'search' | 'properties' | 'copilot') => void;
 }
+
+const MOBILE_TOUR_STEPS: TourStep[] = [
+  {
+    target: 'body',
+    title: 'Welcome to OpenWord Mobile! 📱',
+    description: 'Explore our high-fidelity rich text editor optimized for your phone or tablet screen.',
+    placement: 'center'
+  },
+  {
+    target: 'body',
+    title: 'Swipeable Formatting Bar ✍️',
+    description: 'Swipe left or right on the bottom formatting toolbar to access formatting tools: Bold, Italic, lists, headings, and table insertion.',
+    placement: 'center'
+  },
+  {
+    target: 'body',
+    title: 'Contextual Table Controls 📊',
+    description: 'Tap inside any table cell to reveal row and column controls directly above your formatting bar.',
+    placement: 'center'
+  },
+  {
+    target: 'body',
+    title: 'Slide-out Sidebar Drawer 🧭',
+    description: 'Tap the header icons to open the Outline headings map, run Search and Replace, or toggle the AI Writing Copilot.',
+    placement: 'center'
+  },
+  {
+    target: 'body',
+    title: '100% Client-Side Privacy 🔒',
+    description: 'OpenWord saves all documents and drafts locally to IndexedDB. Your texts never leave your device.',
+    placement: 'center'
+  }
+];
 
 const TOUR_STEPS: TourStep[] = [
   {
@@ -57,6 +91,7 @@ const TOUR_STEPS: TourStep[] = [
 ];
 
 export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, setSidebarTab }) => {
+  const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const [stableTooltipCoords, setStableTooltipCoords] = useState<{
@@ -77,7 +112,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isMobile) return;
 
     const step = TOUR_STEPS[currentStep];
     
@@ -255,6 +290,72 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
 
     return { top: `${top}px`, left: `${left}px` };
   };
+
+  if (isMobile) {
+    const currentMobileStep = MOBILE_TOUR_STEPS[currentStep];
+    return (
+      <div className="tutorial-tour-overlay mobile-tour-overlay">
+        <div className="tutorial-tooltip-card mobile-tour-card anim-scale-in" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', position: 'fixed' }}>
+          <button className="tour-close-btn" onClick={handleComplete} title="Skip Tour">
+            <X size={14} />
+          </button>
+
+          <div className="tour-card-header">
+            <Sparkles className="tour-sparkle" size={14} />
+            <span className="tour-progress">Step {currentStep + 1} of {MOBILE_TOUR_STEPS.length}</span>
+          </div>
+
+          <div className="tour-welcome-brand" style={{ display: 'flex', justifyContent: 'center', margin: '8px 0 16px 0' }}>
+            <svg viewBox="0 0 24 24" style={{ width: '48px', height: '48px' }} fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="tour-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0078d4" />
+                  <stop offset="100%" stopColor="#00b4fc" />
+                </linearGradient>
+              </defs>
+              <path d="M16 2H8C5.79086 2 4 3.79086 4 6V18C4 20.2091 5.79086 22 8 22H16C18.2091 22 20 20.2091 20 18V6C20 3.79086 18.2091 2 16 2Z" fill="url(#tour-logo-grad)" />
+              <circle cx="12" cy="12" r="5" stroke="white" strokeWidth="1.8" strokeDasharray="24 6" strokeLinecap="round" />
+              <path d="M9.5 10L11 14L12 12L13 14L14.5 10" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+
+          <h3 className="tour-step-title" style={{ textAlign: 'center' }}>{currentMobileStep.title}</h3>
+          <p className="tour-step-desc" style={{ textAlign: 'center', fontSize: '13px', margin: '12px 0 20px 0' }}>{currentMobileStep.description}</p>
+
+          <div className="tour-progress-bar-container">
+            <div 
+              className="tour-progress-bar" 
+              style={{ width: `${((currentStep + 1) / MOBILE_TOUR_STEPS.length) * 100}%` }}
+            />
+          </div>
+
+          <div className="tour-card-actions">
+            <button className="tour-btn-skip" onClick={handleComplete}>
+              Skip
+            </button>
+            <div className="tour-nav-btns">
+              {currentStep > 0 && (
+                <button className="tour-btn-nav back" onClick={handleBack}>
+                  <ArrowLeft size={13} />
+                  <span>Back</span>
+                </button>
+              )}
+              <button className="tour-btn-nav next" onClick={() => {
+                if (currentStep < MOBILE_TOUR_STEPS.length - 1) {
+                  setCurrentStep(currentStep + 1);
+                } else {
+                  handleComplete();
+                }
+              }}>
+                <span>{currentStep === MOBILE_TOUR_STEPS.length - 1 ? 'Finish' : 'Next'}</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="tutorial-tour-overlay">

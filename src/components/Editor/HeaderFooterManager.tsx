@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDocument } from '../../context/DocumentContext';
 import { Heading, Info, X } from 'lucide-react';
+import { useIsMobile } from '../../utils/useIsMobile';
 
 interface HeaderFooterManagerProps {
   isOpen: boolean;
@@ -9,11 +10,12 @@ interface HeaderFooterManagerProps {
 
 export const HeaderFooterManager: React.FC<HeaderFooterManagerProps> = ({ isOpen, onClose }) => {
   const { docState, updateHeaders, updateFooters } = useDocument();
+  const isMobile = useIsMobile();
 
   if (!isOpen) return null;
 
   return (
-    <div className="header-footer-sticky-panel">
+    <div className={`header-footer-sticky-panel ${isMobile ? 'mobile-bottom-sheet' : ''}`}>
       <div className="panel-header">
         <div className="panel-title">
           <Heading size={18} className="panel-icon" />
