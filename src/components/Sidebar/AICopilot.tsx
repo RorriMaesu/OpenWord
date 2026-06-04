@@ -11,7 +11,10 @@ import {
 import type { OllamaMessage } from '../../utils/ollama';
 import { detectHardware, detectOS } from '../../utils/hardware';
 import type { HardwareProfile, OSDetails } from '../../utils/hardware';
-import { serializeEditorToBlocks } from '../../utils/blocks';
+import { 
+  serializeEditorToBlocks, streamEditBlock, 
+  insertPlaceholderBlock, executeDeleteBlock 
+} from '../../utils/blocks';
 import type { DocumentBlock, BlockOperation } from '../../utils/blocks';
 import { CopilotDiffCard } from './CopilotDiffCard';
 import { AgentStreamParser } from '../../utils/agentParser';
@@ -54,6 +57,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [temperature, setTemperature] = useState<number>(0.7);
   const [enableMtp, setEnableMtp] = useState<boolean>(true);
   const [includeContext, setIncludeContext] = useState<boolean>(true);
+  const [directEdit, setDirectEdit] = useState<boolean>(true);
   const [showSettings, setShowSettings] = useState<boolean>(false);
 
   // Chat feed states
@@ -224,6 +228,7 @@ Rules:
 3. HTML content: The content inside the tags must be valid HTML (e.g. paragraphs, headings) using basic formatting like <strong>, <em>, etc. if needed.
 4. Output flow: You can write conversational explanations first, and then output the XML tags to perform the edits. Or you can output them in any order. The changes will type themselves out in the editor in real-time!
 5. IMPORTANT: Do not use standard markdown code blocks or json blocks for operations. Use ONLY the specified XML tags for document modification.
+6. CRITICAL REQUIREMENT: If the user asks you to rewrite, delete, insert, erase, clear, or modify text in the document, you MUST use the XML tags to carry out the changes. Do NOT output the new text solely in conversational form — you must wrap all document changes inside the appropriate XML tags so the document can be updated.
 
 ---
 EXAMPLES OF CORRECT ACTIONS:
@@ -281,48 +286,100 @@ Response: Certainly, I will delete the outdated paragraph.
       draft_num_predict: enableMtp ? 4 : 0
     };
 
+    let activeInsertionIndex: number | null = null;
+    const changes: { type: 'insert' | 'delete'; originalIndex: number }[] = [];
+
+    const getShiftedIndex = (originalIndex: number): number => {
+      let shift = 0;
+      for (const change of changes) {
+        if (change.type === 'insert') {
+          if (originalIndex >= change.originalIndex) {
+            shift += 1;
+          }
+        } else if (change.type === 'delete') {
+          if (originalIndex > change.originalIndex) {
+            shift -= 1;
+          }
+        }
+      }
+      return originalIndex + shift;
+    };
+
     const parser = new AgentStreamParser(
       (conversationalText) => {
         setStreamedResponse(conversationalText);
       },
       (event: ToolCallEvent) => {
-        // Build the live streamedOperations list in real-time as the chunks arrive
-        setStreamedOperations(prev => {
-          const updated = [...prev];
-          
-          let wrappedHtml = event.content.trim();
-          if (!wrappedHtml.startsWith('<')) {
+        if (directEdit) {
+          if (!editor) return;
+          try {
             if (event.type === 'insert') {
-              const tag = event.blockType === 'heading' ? 'h1' : 'p';
-              wrappedHtml = `<${tag}>${wrappedHtml}</${tag}>`;
+              if (activeInsertionIndex === null) {
+                const shiftedAfterIndex = getShiftedIndex(event.index);
+                const newIndex = insertPlaceholderBlock(editor, shiftedAfterIndex, event.blockType);
+                if (newIndex !== -1) {
+                  activeInsertionIndex = newIndex;
+                  changes.push({ type: 'insert', originalIndex: event.index });
+                }
+              }
+
+              if (activeInsertionIndex !== null) {
+                streamEditBlock(editor, activeInsertionIndex, event.content, event.isFinal);
+              }
+
+              if (event.isFinal) {
+                activeInsertionIndex = null;
+              }
             } else if (event.type === 'edit') {
-              const targetBlock = originalBlocks.find(b => b.index === event.index);
-              const tagMatch = targetBlock?.html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>/);
-              if (tagMatch) {
-                const tagName = tagMatch[1];
-                const attrs = tagMatch[2];
-                wrappedHtml = `<${tagName}${attrs}>${wrappedHtml}</${tagName}>`;
-              } else {
-                wrappedHtml = `<p>${wrappedHtml}</p>`;
+              const shiftedIndex = getShiftedIndex(event.index);
+              streamEditBlock(editor, shiftedIndex, event.content, event.isFinal);
+            } else if (event.type === 'delete') {
+              const shiftedIndex = getShiftedIndex(event.index);
+              executeDeleteBlock(editor, shiftedIndex);
+              changes.push({ type: 'delete', originalIndex: event.index });
+            }
+          } catch (err) {
+            console.error('Failed to apply stream mutator action:', err);
+          }
+        } else {
+          // Build the live streamedOperations list in real-time as the chunks arrive (Proposal Mode)
+          setStreamedOperations(prev => {
+            const updated = [...prev];
+            
+            let wrappedHtml = event.content.trim();
+            if (!wrappedHtml.startsWith('<')) {
+              if (event.type === 'insert') {
+                const tag = event.blockType === 'heading' ? 'h1' : 'p';
+                wrappedHtml = `<${tag}>${wrappedHtml}</${tag}>`;
+              } else if (event.type === 'edit') {
+                const targetBlock = originalBlocks.find(b => b.index === event.index);
+                const tagMatch = targetBlock?.html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>/);
+                if (tagMatch) {
+                  const tagName = tagMatch[1];
+                  const attrs = tagMatch[2];
+                  wrappedHtml = `<${tagName}${attrs}>${wrappedHtml}</${tagName}>`;
+                } else {
+                  wrappedHtml = `<p>${wrappedHtml}</p>`;
+                }
               }
             }
-          }
 
-          const lastOp = updated[updated.length - 1];
-          if (lastOp && lastOp.type === event.type && lastOp.index === event.index) {
-            updated[updated.length - 1] = {
-              ...lastOp,
-              html: wrappedHtml
-            };
-          } else {
-            updated.push({
-              type: event.type,
-              index: event.index,
-              html: event.type !== 'delete' ? wrappedHtml : undefined
-            });
-          }
-          return updated;
-        });
+            const lastOp = updated[updated.length - 1];
+            if (lastOp && lastOp.type === event.type && lastOp.index === event.index) {
+              updated[updated.length - 1] = {
+                ...lastOp,
+                html: wrappedHtml
+              };
+            } else {
+              updated.push({
+                type: event.type,
+                index: event.index,
+                html: event.type !== 'delete' ? wrappedHtml : undefined
+              });
+            }
+            return updated;
+          });
+        }
       }
     );
 
@@ -336,39 +393,47 @@ Response: Certainly, I will delete the outdated paragraph.
       (_doneText) => {
         parser.finalize();
 
-        // Convert the finalized events to BlockOperations
-        const finalOps: BlockOperation[] = parser.getFinalizedEvents().map(event => {
-          let wrappedHtml = event.content.trim();
-          if (!wrappedHtml.startsWith('<')) {
-            if (event.type === 'insert') {
-              const tag = event.blockType === 'heading' ? 'h1' : 'p';
-              wrappedHtml = `<${tag}>${wrappedHtml}</${tag}>`;
-            } else if (event.type === 'edit') {
-              const targetBlock = originalBlocks.find(b => b.index === event.index);
-              const tagMatch = targetBlock?.html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>/);
-              if (tagMatch) {
-                const tagName = tagMatch[1];
-                const attrs = tagMatch[2];
-                wrappedHtml = `<${tagName}${attrs}>${wrappedHtml}</${tagName}>`;
-              } else {
-                wrappedHtml = `<p>${wrappedHtml}</p>`;
+        if (directEdit) {
+          // In Direct Edit mode, edits are already applied directly in real-time
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: parser.getConversationalText()
+          }]);
+        } else {
+          // Convert the finalized events to BlockOperations for Proposal Mode
+          const finalOps: BlockOperation[] = parser.getFinalizedEvents().map(event => {
+            let wrappedHtml = event.content.trim();
+            if (!wrappedHtml.startsWith('<')) {
+              if (event.type === 'insert') {
+                const tag = event.blockType === 'heading' ? 'h1' : 'p';
+                wrappedHtml = `<${tag}>${wrappedHtml}</${tag}>`;
+              } else if (event.type === 'edit') {
+                const targetBlock = originalBlocks.find(b => b.index === event.index);
+                const tagMatch = targetBlock?.html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>/);
+                if (tagMatch) {
+                  const tagName = tagMatch[1];
+                  const attrs = tagMatch[2];
+                  wrappedHtml = `<${tagName}${attrs}>${wrappedHtml}</${tagName}>`;
+                } else {
+                  wrappedHtml = `<p>${wrappedHtml}</p>`;
+                }
               }
             }
-          }
-          return {
-            type: event.type,
-            index: event.index,
-            html: event.type !== 'delete' ? wrappedHtml : undefined
-          };
-        });
+            return {
+              type: event.type,
+              index: event.index,
+              html: event.type !== 'delete' ? wrappedHtml : undefined
+            };
+          });
 
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: parser.getConversationalText(),
-          operations: finalOps,
-          originalBlocks: originalBlocks,
-          status: finalOps.length > 0 ? 'pending' : undefined
-        }]);
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: parser.getConversationalText(),
+            operations: finalOps,
+            originalBlocks: originalBlocks,
+            status: finalOps.length > 0 ? 'pending' : undefined
+          }]);
+        }
         setStreamedResponse('');
         setStreamedOperations([]);
         setIsGenerating(false);
@@ -653,6 +718,21 @@ Response: Certainly, I will delete the outdated paragraph.
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
                 className="control-slider" 
               />
+            </div>
+
+            {/* Direct Edit Mode Toggle */}
+            <div className="control-row">
+              <div className="control-label-col">
+                <span className="control-title">Direct Edit Mode</span>
+                <span className="control-desc">Apply edits directly to the document in real-time</span>
+              </div>
+              <button 
+                onClick={() => setDirectEdit(!directEdit)} 
+                className="control-toggle-switch"
+                title="Toggle Direct Edit Mode"
+              >
+                {directEdit ? <ToggleRight className="toggle-icon active" size={26} /> : <ToggleLeft className="toggle-icon" size={26} />}
+              </button>
             </div>
 
             {/* Document Context Toggle */}
