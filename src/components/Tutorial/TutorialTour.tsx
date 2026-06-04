@@ -23,7 +23,7 @@ const TOUR_STEPS: TourStep[] = [
     placement: 'center'
   },
   {
-    target: '.ruler-container',
+    target: '.ruler-outer-container',
     title: 'Interactive Page Ruler 📏',
     description: 'Adjust document margins on the fly by dragging the handles on either side. Text automatically shifts and wraps in real-time.',
     placement: 'top'
@@ -89,7 +89,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
     }
 
     // Toggle simulation class on ruler during step 1 (Ruler handle)
-    const ruler = document.querySelector('.ruler-container');
+    const ruler = document.querySelector('.ruler-outer-container');
     if (ruler) {
       if (currentStep === 1) {
         ruler.classList.add('simulating-ruler');
@@ -159,7 +159,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
     // Clear simulation animations
     const sidebar = document.querySelector('.sidebar-container');
     if (sidebar) sidebar.classList.remove('simulating-resize');
-    const ruler = document.querySelector('.ruler-container');
+    const ruler = document.querySelector('.ruler-outer-container');
     if (ruler) ruler.classList.remove('simulating-ruler');
     
     // Clear highlighting classes
@@ -230,8 +230,22 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
         <div 
           className="simulated-pointer ruler-drag"
           style={{
-            top: `${coords.top + coords.height / 2}px`,
-            left: `${coords.left + coords.width / 2}px`
+            top: `${(() => {
+              const handle = document.querySelector('.left-handle');
+              if (handle) {
+                const rect = handle.getBoundingClientRect();
+                return rect.top + rect.height / 2 + window.scrollY;
+              }
+              return coords.top + coords.height / 2;
+            })()}px`,
+            left: `${(() => {
+              const handle = document.querySelector('.left-handle');
+              if (handle) {
+                const rect = handle.getBoundingClientRect();
+                return rect.left + rect.width / 2 + window.scrollX;
+              }
+              return coords.left + 96;
+            })()}px`
           }}
         />
       )}

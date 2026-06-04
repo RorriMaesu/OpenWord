@@ -3884,7 +3884,7 @@ mark {
   50% { opacity: 0.3; }
   100% { opacity: 0.8; }
 }
-.ruler-container.simulating-ruler::after {
+.ruler-outer-container.simulating-ruler::after {
   content: '';
   position: absolute;
   inset: 0;
