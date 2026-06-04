@@ -69,19 +69,13 @@ export class AgentStreamParser {
 
       if (!this.currentTool) {
         // 1. Not in a tool call. Look for opening tags:
-        // Supports index="N", index='N', index=N, and case-insensitive matching
-        const editMatch = this.buffer.match(/<edit_block\s+index\s*=\s*["']?(-?\d+)["']?\s*>/i);
-        const insertMatch = this.buffer.match(/<insert_block\s+after\s*=\s*["']?(-?\d+)["']?(?:\s+type\s*=\s*["']?([a-zA-Z]+)["']?)?\s*>/i);
-        const deleteMatch = this.buffer.match(/<delete_block\s+index\s*=\s*["']?(-?\d+)["']?\s*\/?>/i);
+        const tagMatch = this.buffer.match(/<(edit_block|insert_block|delete_block)\b([^>]*)>/i);
 
-        // Find the earliest match index in the current buffer
-        const editIdx = editMatch && editMatch.index !== undefined ? editMatch.index : Infinity;
-        const insertIdx = insertMatch && insertMatch.index !== undefined ? insertMatch.index : Infinity;
-        const deleteIdx = deleteMatch && deleteMatch.index !== undefined ? deleteMatch.index : Infinity;
+        if (tagMatch && tagMatch.index !== undefined) {
+          const earliestIdx = tagMatch.index;
+          const tagName = tagMatch[1].toLowerCase();
+          const attrString = tagMatch[2];
 
-        const earliestIdx = Math.min(editIdx, insertIdx, deleteIdx);
-
-        if (earliestIdx !== Infinity) {
           // Consume text before the tag as conversational text
           const textBefore = this.buffer.substring(0, earliestIdx);
           if (textBefore) {
@@ -92,25 +86,37 @@ export class AgentStreamParser {
           // Cut the consumed buffer up to the tag start
           this.buffer = this.buffer.substring(earliestIdx);
 
-          if (earliestIdx === editIdx && editMatch) {
+          // Parse attributes dynamically (independent of order, quotes, or spacing)
+          const attrs: Record<string, string> = {};
+          const attrRegex = /([a-zA-Z0-9_-]+)\s*=\s*(?:["']([^"']*)["']|([^\s>]+))/g;
+          let match;
+          while ((match = attrRegex.exec(attrString)) !== null) {
+            const key = match[1].toLowerCase();
+            const val = match[2] || match[3];
+            attrs[key] = val;
+          }
+
+          if (tagName === 'edit_block') {
+            const index = parseInt(attrs['index'] || '0', 10);
             this.currentTool = {
               type: 'edit',
-              index: parseInt(editMatch[1], 10),
+              index: isNaN(index) ? 0 : index,
               contentBuffer: ''
             };
-            this.buffer = this.buffer.substring(editMatch[0].length);
-          } else if (earliestIdx === insertIdx && insertMatch) {
+            this.buffer = this.buffer.substring(tagMatch[0].length);
+          } else if (tagName === 'insert_block') {
+            const after = parseInt(attrs['after'] || '-1', 10);
             this.currentTool = {
               type: 'insert',
-              index: parseInt(insertMatch[1], 10),
-              blockType: insertMatch[2] || 'paragraph',
+              index: isNaN(after) ? -1 : after,
+              blockType: attrs['type'] || 'paragraph',
               contentBuffer: ''
             };
-            this.buffer = this.buffer.substring(insertMatch[0].length);
-          } else if (earliestIdx === deleteIdx && deleteMatch) {
-            const targetIndex = parseInt(deleteMatch[1], 10);
-            
-            // Delete is instantaneous, track it as finalized immediately
+            this.buffer = this.buffer.substring(tagMatch[0].length);
+          } else if (tagName === 'delete_block') {
+            const index = parseInt(attrs['index'] || '0', 10);
+            const targetIndex = isNaN(index) ? 0 : index;
+
             this.finalizedEvents.push({
               type: 'delete',
               index: targetIndex,
@@ -124,7 +130,7 @@ export class AgentStreamParser {
               content: '',
               isFinal: true
             });
-            this.buffer = this.buffer.substring(deleteMatch[0].length);
+            this.buffer = this.buffer.substring(tagMatch[0].length);
           }
 
           changed = true;
