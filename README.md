@@ -39,7 +39,7 @@ Unlike standard cloud word processors, OpenWord is an **offline-first, zero-serv
 *   **Sidebar Navigation Outline:** Auto-updating outline list based on heading tags to navigate large documents quickly.
 *   **Aesthetic Theme Selector:** Seamless light-to-dark canvas transition via the bottom Status Bar.
 
-### 🤖 Local Offline AI Copilot
+### 🤖 Local Offline OpenWord AI
 *   **Zero-Server Offline Collaboration:** Connects directly to a local [Ollama](https://ollama.com) instance running Gemma, Llama, Qwen, or other models to assist with drafting, rewriting, and expanding.
 *   **Dual Document-Editing Modes:**
     - **Direct Edit Mode (Real-Time):** Streams AI edits directly into the document editor in real-time using a cursor-stable block shifter.

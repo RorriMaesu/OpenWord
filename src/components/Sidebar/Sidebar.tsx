@@ -242,10 +242,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
         <button 
           className={`sidebar-tab ${activeTab === 'copilot' ? 'active' : ''}`}
           onClick={() => setActiveTab('copilot')}
-          title="AI Writing Copilot"
+          title="OpenWord AI Assistant"
         >
           <Sparkles size={18} />
-          <span>Copilot</span>
+          <span>OpenWord AI</span>
         </button>
       </div>
 
