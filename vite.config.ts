@@ -1,9 +1,20 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { exec } from 'child_process'
+import { exec, execSync } from 'child_process'
 import http from 'http'
 import fs from 'fs'
 import path from 'path'
+
+// Helper to check if Ollama is available in system PATH
+function isOllamaInPath(): boolean {
+  try {
+    const cmd = process.platform === 'win32' ? 'where ollama' : 'which ollama';
+    execSync(cmd, { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Helper to recursively find files matching a regex pattern
 function findFileRegex(dir: string, pattern: RegExp, maxDepth = 3, currentDepth = 0): string | null {
@@ -59,6 +70,8 @@ export default defineConfig({
               try {
                 const data = JSON.parse(body || '{}');
                 if (data.action === 'launch') {
+                  let foundPath: string | null = null;
+                  let isInstalled = false;
                   let launchCommand = '';
                   
                   if (process.platform === 'win32') {
@@ -75,7 +88,6 @@ export default defineConfig({
                     ];
 
                     const pattern = /^ollama(\s+app)?\.(exe|lnk)$/i;
-                    let foundPath: string | null = null;
                     
                     for (const root of winRoots) {
                       foundPath = findFileRegex(root.dir, pattern, root.depth);
@@ -84,8 +96,10 @@ export default defineConfig({
 
                     if (foundPath) {
                       launchCommand = `start "" "${foundPath}"`;
-                    } else {
-                      launchCommand = 'start "" "ollama app"'; // Fallback
+                      isInstalled = true;
+                    } else if (isOllamaInPath()) {
+                      launchCommand = 'start "" "ollama app"';
+                      isInstalled = true;
                     }
                   } else if (process.platform === 'darwin') {
                     const home = process.env.HOME || '';
@@ -94,7 +108,6 @@ export default defineConfig({
                       { dir: path.join(home, 'Applications'), depth: 2 }
                     ];
                     const pattern = /^Ollama\.app$/i;
-                    let foundPath: string | null = null;
 
                     for (const root of macRoots) {
                       foundPath = findFileRegex(root.dir, pattern, root.depth);
@@ -103,8 +116,10 @@ export default defineConfig({
 
                     if (foundPath) {
                       launchCommand = `open -a "${foundPath}"`;
-                    } else {
-                      launchCommand = 'open -a Ollama'; // Fallback
+                      isInstalled = true;
+                    } else if (isOllamaInPath()) {
+                      launchCommand = 'open -a Ollama';
+                      isInstalled = true;
                     }
                   } else {
                     // Linux
@@ -116,7 +131,6 @@ export default defineConfig({
                       { dir: path.join(home, 'bin'), depth: 2 }
                     ];
                     const pattern = /^ollama$/i;
-                    let foundPath: string | null = null;
 
                     for (const root of linuxRoots) {
                       foundPath = findFileRegex(root.dir, pattern, root.depth);
@@ -125,19 +139,25 @@ export default defineConfig({
 
                     if (foundPath) {
                       launchCommand = `nohup "${foundPath}" serve > /dev/null 2>&1 &`;
-                    } else {
-                      launchCommand = 'ollama serve &'; // Fallback
+                      isInstalled = true;
+                    } else if (isOllamaInPath()) {
+                      launchCommand = 'ollama serve &';
+                      isInstalled = true;
                     }
                   }
 
-                  exec(launchCommand, (err) => {
-                    if (err && process.platform === 'win32' && launchCommand !== 'start "" "ollama"') {
-                      exec('start "" "ollama"');
-                    }
-                  });
-
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ success: true, message: `Launch command triggered: ${launchCommand}` }));
+                  if (isInstalled && launchCommand) {
+                    exec(launchCommand, (err) => {
+                      if (err && process.platform === 'win32' && launchCommand !== 'start "" "ollama"') {
+                        exec('start "" "ollama"');
+                      }
+                    });
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, found: true, message: `Launch command triggered: ${launchCommand}` }));
+                  } else {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, found: false, error: 'Ollama application not found on your system.' }));
+                  }
                   return;
                 }
               } catch (e: any) {

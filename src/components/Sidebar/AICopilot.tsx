@@ -130,14 +130,9 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   }, [messages, streamedResponse]);
 
   const handleLaunchOllama = async () => {
-    const agree = window.confirm(
-      "Would you like OpenWord to attempt to automatically locate and launch the local Ollama background service on your machine?"
-    );
-    if (!agree) return;
-
     setIsLaunching(true);
-    const launched = await launchLocalOllama();
-    if (launched) {
+    const result = await launchLocalOllama();
+    if (result.success && result.found) {
       // Poll rapidly for 10 seconds to detect startup
       let attempts = 0;
       const interval = setInterval(async () => {
@@ -156,7 +151,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
       }, 500);
     } else {
       setIsLaunching(false);
-      setShowInstallModal(true);
+      setShowInstallModal(true); // Instantly open helper if not found or launch failed
     }
   };
 

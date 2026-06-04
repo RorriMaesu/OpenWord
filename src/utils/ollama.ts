@@ -73,15 +73,11 @@ export async function checkOllamaStatus(): Promise<boolean> {
   }
 }
 
-/**
- * Request the dev server bridge to launch Ollama on the user's host OS.
- */
-export async function launchLocalOllama(): Promise<boolean> {
+export async function launchLocalOllama(): Promise<{ success: boolean; found: boolean; error?: string }> {
   try {
     const controlUrl = await getControlApiUrl();
     if (!controlUrl) {
-      console.error('No local control API available to trigger launch.');
-      return false;
+      return { success: false, found: false, error: 'No local control API available' };
     }
     const res = await fetch(controlUrl, {
       method: 'POST',
@@ -90,12 +86,12 @@ export async function launchLocalOllama(): Promise<boolean> {
     });
     if (res.ok) {
       const data = await res.json();
-      return data.success;
+      return { success: !!data.success, found: !!data.found };
     }
   } catch (err) {
     console.error('Failed to trigger local daemon launch bridge:', err);
   }
-  return false;
+  return { success: false, found: false };
 }
 
 /**
