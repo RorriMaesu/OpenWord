@@ -119,21 +119,6 @@ Make sure you have [Node.js](https://nodejs.org/) installed.
 npm run build
 ```
 This generates a static website inside the `dist/` directory.
-
----
-
-## 📦 Deployment to GitHub Pages
-
-OpenWord is configured to compile as a static SPA, making it ideal for hosting on GitHub Pages.
-
-### To Deploy:
-1. Ensure your repository remote is configured correctly on your local machine.
-2. Run the deploy script:
-   ```bash
-   npm run deploy
-   ```
-This will compile the assets with base path support (`/OpenWord/`) and push the build directory to the `gh-pages` branch.
-
 ---
 
 ## 🗺️ Roadmap
