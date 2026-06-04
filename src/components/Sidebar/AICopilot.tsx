@@ -19,6 +19,7 @@ import type { DocumentBlock, BlockOperation } from '../../utils/blocks';
 import { CopilotDiffCard } from './CopilotDiffCard';
 import { AgentStreamParser } from '../../utils/agentParser';
 import type { ToolCallEvent } from '../../utils/agentParser';
+import { getFriendlyModelName } from '../../utils/modelHelper';
 
 interface AICopilotProps {
   editor: Editor | null;
@@ -61,9 +62,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
 
   // Chat feed states
-  const [messages, setMessages] = useState<ExtendedMessage[]>([
-    { role: 'assistant', content: 'Hello! I am Gemma, your offline AI co-writer. How can I help you write or edit your document today?' }
-  ]);
+  const [messages, setMessages] = useState<ExtendedMessage[]>([]);
   const [inputPrompt, setInputPrompt] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [streamedResponse, setStreamedResponse] = useState<string>('');
@@ -85,6 +84,20 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     setDetectedOS(os);
     setSelectedOS(os.osName);
   }, []);
+
+  // Sync / set dynamic greeting based on currently selected model
+  useEffect(() => {
+    const friendlyName = getFriendlyModelName(selectedModel);
+    // If messages are empty or only contain a greeting assistant role, replace the greeting
+    if (messages.length === 0 || (messages.length === 1 && messages[0].role === 'assistant')) {
+      setMessages([
+        { 
+          role: 'assistant', 
+          content: `Hello! I am ${friendlyName}, your offline AI co-writer. How can I help you write or edit your document today?` 
+        }
+      ]);
+    }
+  }, [selectedModel]);
 
   // Ollama connection polling
   const runConnectionCheck = async () => {
@@ -206,7 +219,9 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
         currentBlocks.map(b => `Block ${b.index} (${b.type}): "${b.text}"`).join('\n') + '\n\n';
     }
 
-    const systemPromptBase = `You are an expert AI writing collaborator and editor. You can help the user edit their document.
+    const friendlyName = getFriendlyModelName(selectedModel);
+
+    const systemPromptBase = `You are ${friendlyName}, an expert AI writing collaborator and editor. You can help the user edit their document.
 You have direct, real-time access to modify the document. To perform edits, inserts, or deletes, you must output special XML tags inline within your response.
 
 Supported tags:
@@ -691,7 +706,7 @@ Response: Certainly, I will delete the outdated paragraph.
             {/* Speculative Decoding (MTP) */}
             <div className="control-row">
               <div className="control-label-col">
-                <span className="control-title">Gemma 4 MTP Decoding</span>
+                <span className="control-title">{getFriendlyModelName(selectedModel)} MTP Decoding</span>
                 <span className="control-desc">Accelerate token speeds ~3x using drafter tensors</span>
               </div>
               <button 
@@ -787,7 +802,7 @@ Response: Certainly, I will delete the outdated paragraph.
       <div className="copilot-input-area">
         <textarea
           className="copilot-input-field"
-          placeholder={isConnected ? "Ask Gemma to rewrite, write a chapter, or format..." : "Ollama offline - launch service above"}
+          placeholder={isConnected ? `Ask ${getFriendlyModelName(selectedModel)} to rewrite, write a chapter, or format...` : "Ollama offline - launch service above"}
           disabled={!isConnected || isGenerating}
           value={inputPrompt}
           onChange={(e) => setInputPrompt(e.target.value)}
@@ -820,7 +835,7 @@ Response: Certainly, I will delete the outdated paragraph.
             
             <div className="install-modal-body">
               <p className="install-intro-text">
-                Ollama allows you to run models like Gemma 4 completely offline on your own machine. We detected your system configuration.
+                Ollama allows you to run models like {getFriendlyModelName(selectedModel)} completely offline on your own machine. We detected your system configuration.
               </p>
 
               {/* OS Selection Tabs */}
