@@ -1015,13 +1015,13 @@
 /* Dynamic Fluid Typography based on Sidebar Width */
 @container sidebar (min-width: 0px) {
   .chat-bubble-row .bubble-text {
-    font-size: clamp(12px, 0.72rem + 0.9cqw, 16px);
+    font-size: clamp(12px, 0.72rem + 0.9cqw, 17.5px);
   }
   .copilot-input-field {
-    font-size: clamp(11px, 0.68rem + 0.8cqw, 15px);
+    font-size: clamp(11px, 0.68rem + 0.8cqw, 16px);
   }
   .sidebar-tab span {
-    font-size: clamp(9.5px, 0.55rem + 0.6cqw, 12px);
+    font-size: clamp(9.5px, 0.55rem + 0.6cqw, 12.5px);
   }
   .copilot-model-select {
     font-size: clamp(10px, 0.6rem + 0.6cqw, 13px);
@@ -1030,7 +1030,7 @@
     font-size: clamp(10px, 0.6rem + 0.6cqw, 13px);
   }
   .pane-title {
-    font-size: clamp(11.5px, 0.68rem + 0.8cqw, 15px);
+    font-size: clamp(11.5px, 0.68rem + 0.8cqw, 16px);
   }
   .status-label {
     font-size: clamp(10px, 0.6rem + 0.6cqw, 13px);
