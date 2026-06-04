@@ -1020,6 +1020,7 @@
 .sidebar-content {
   overflow-y: auto;
   padding: 16px;
+  min-height: 0;
 }
 
 .sidebar-content.copilot-tab-active {
@@ -1028,6 +1029,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .pane-title {
