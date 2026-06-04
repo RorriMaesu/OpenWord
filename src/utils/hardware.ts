@@ -31,21 +31,79 @@ export function detectHardware(): HardwareProfile {
     // Apple unified memory: Use system memory as VRAM metric
     estimatedVramGb = systemMemoryGb;
   } else {
-    // Dedicated GPU heuristics based on model strings
-    const gpuLower = gpuName.toLowerCase();
+    // Dedicated GPU heuristics based on normalized model strings (spaces/dashes stripped)
+    const gpuNormalized = gpuName.toLowerCase().replace(/[\s\-_]+/g, '');
 
-    if (gpuLower.includes('rtx 4090') || gpuLower.includes('rtx 3090') || gpuLower.includes('a100') || gpuLower.includes('h100') || gpuLower.includes('a10g') || gpuLower.includes('rtx 6000')) {
-      estimatedVramGb = 24;
-    } else if (gpuLower.includes('rtx 4080') || gpuLower.includes('rtx 3080') || gpuLower.includes('rtx 3085') || gpuLower.includes('rtx 4070 ti')) {
+    // RTX 50-series
+    if (gpuNormalized.includes('rtx5090')) {
+      estimatedVramGb = 32;
+    } else if (gpuNormalized.includes('rtx5080')) {
       estimatedVramGb = 16;
-    } else if (gpuLower.includes('rtx 4070') || gpuLower.includes('rtx 3070') || gpuLower.includes('rtx 3060 ti') || gpuLower.includes('rtx 2080')) {
+    } else if (gpuNormalized.includes('rtx5070ti')) {
+      estimatedVramGb = 16;
+    } else if (gpuNormalized.includes('rtx5070')) {
       estimatedVramGb = 12;
-    } else if (gpuLower.includes('rtx 4060') || gpuLower.includes('rtx 3060') || gpuLower.includes('rtx 2070') || gpuLower.includes('rtx 2060')) {
+    } else if (gpuNormalized.includes('rtx5060ti')) {
+      estimatedVramGb = 16;
+    } else if (gpuNormalized.includes('rtx5060')) {
+      estimatedVramGb = 12;
+    }
+    // RTX 40-series
+    else if (gpuNormalized.includes('rtx4090')) {
+      estimatedVramGb = 24;
+    } else if (gpuNormalized.includes('rtx4080ti') || gpuNormalized.includes('rtx4080')) {
+      estimatedVramGb = 16;
+    } else if (gpuNormalized.includes('rtx4070ti')) {
+      estimatedVramGb = 16;
+    } else if (gpuNormalized.includes('rtx4070')) {
+      estimatedVramGb = 12;
+    } else if (gpuNormalized.includes('rtx4060ti')) {
+      estimatedVramGb = 16;
+    } else if (gpuNormalized.includes('rtx4060')) {
       estimatedVramGb = 8;
-    } else if (gpuLower.includes('gtx 1660') || gpuLower.includes('gtx 1080') || gpuLower.includes('gtx 1070')) {
+    }
+    // RTX 30-series
+    else if (gpuNormalized.includes('rtx3090ti') || gpuNormalized.includes('rtx3090')) {
+      estimatedVramGb = 24;
+    } else if (gpuNormalized.includes('rtx3080ti') || gpuNormalized.includes('rtx3080')) {
+      estimatedVramGb = 12;
+    } else if (gpuNormalized.includes('rtx3070ti') || gpuNormalized.includes('rtx3070')) {
+      estimatedVramGb = 8;
+    } else if (gpuNormalized.includes('rtx3060ti')) {
+      estimatedVramGb = 8;
+    } else if (gpuNormalized.includes('rtx3060')) {
+      estimatedVramGb = 12;
+    }
+    // Other high-end GPUs & accelerator cards
+    else if (gpuNormalized.includes('rtx2080ti') || gpuNormalized.includes('rtx6000') || gpuNormalized.includes('a100') || gpuNormalized.includes('h100') || gpuNormalized.includes('a10g')) {
+      estimatedVramGb = 24;
+    } else if (gpuNormalized.includes('rtx2080')) {
+      estimatedVramGb = 11;
+    } else if (gpuNormalized.includes('rtx2070') || gpuNormalized.includes('rtx2060')) {
+      estimatedVramGb = 8;
+    } else if (gpuNormalized.includes('gtx1660') || gpuNormalized.includes('gtx1080') || gpuNormalized.includes('gtx1070')) {
+      estimatedVramGb = 8;
+    } else if (gpuNormalized.includes('gtx1650') || gpuNormalized.includes('gtx1060')) {
       estimatedVramGb = 6;
-    } else if (gpuLower.includes('gtx 1650') || gpuLower.includes('gtx 1060') || gpuLower.includes('intel') || gpuLower.includes('iris') || gpuLower.includes('amd radeon')) {
-      // Integrated graphics or low-end card
+    }
+    // AMD Radeon RX Series
+    else if (gpuNormalized.includes('rx7900') || gpuNormalized.includes('rx7950')) {
+      estimatedVramGb = 20;
+    } else if (gpuNormalized.includes('rx7800') || gpuNormalized.includes('rx7700') || gpuNormalized.includes('rx6900') || gpuNormalized.includes('rx6800')) {
+      estimatedVramGb = 16;
+    } else if (gpuNormalized.includes('rx6700') || gpuNormalized.includes('rx5700')) {
+      estimatedVramGb = 12;
+    } else if (gpuNormalized.includes('rx7600') || gpuNormalized.includes('rx6600') || gpuNormalized.includes('rx5600')) {
+      estimatedVramGb = 8;
+    }
+    // Intel Arc Series
+    else if (gpuNormalized.includes('arca770')) {
+      estimatedVramGb = 16;
+    } else if (gpuNormalized.includes('arca750') || gpuNormalized.includes('arca580')) {
+      estimatedVramGb = 8;
+    } else if (gpuNormalized.includes('arca380')) {
+      estimatedVramGb = 6;
+    } else if (gpuNormalized.includes('intel') || gpuNormalized.includes('iris') || gpuNormalized.includes('amd')) {
       estimatedVramGb = Math.min(4, systemMemoryGb / 2);
     }
   }
