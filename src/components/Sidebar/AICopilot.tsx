@@ -3,7 +3,7 @@ import { Editor } from '@tiptap/react';
 import { 
   Sparkles, Send, Bot, User, Settings, RefreshCw, Cpu, 
   CornerDownLeft, FileText, Clipboard, AlertCircle, ToggleLeft, ToggleRight,
-  Download, X
+  Download, X, Trash2
 } from 'lucide-react';
 import { 
   checkOllamaStatus, launchLocalOllama, fetchLocalModels, 
@@ -47,7 +47,9 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(true);
   const [models, setModels] = useState<string[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>('gemma4:2b');
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    return localStorage.getItem('openword_copilot_ollama_model') || 'gemma4:2b';
+  });
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
 
   // Model downloader states
@@ -60,20 +62,32 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const cancelPullRef = useRef<(() => void) | null>(null);
 
   // WebGPU states
-  const [modelMode, setModelMode] = useState<'ollama' | 'webgpu'>('ollama');
+  const [modelMode, setModelMode] = useState<'ollama' | 'webgpu'>(() => {
+    const saved = localStorage.getItem('openword_copilot_mode');
+    return (saved as 'ollama' | 'webgpu') || 'ollama';
+  });
   const [isWebGPUAvailable, setIsWebGPUAvailable] = useState<boolean>(true);
   const [webgpuModels, setWebgpuModels] = useState<EdgeModel[]>([]);
-  const [selectedWebgpuModel, setSelectedWebgpuModel] = useState<string>('gemma-2-2b-it-q4f16_1-MLC');
+  const [selectedWebgpuModel, setSelectedWebgpuModel] = useState<string>(() => {
+    return localStorage.getItem('openword_copilot_webgpu_model') || 'gemma-2-2b-it-q4f16_1-MLC';
+  });
   const [isWebgpuLoading, setIsWebgpuLoading] = useState<boolean>(false);
   const [webgpuLoadProgress, setWebgpuLoadProgress] = useState<{ text: string; pct: number } | null>(null);
   const [isWebgpuLoaded, setIsWebgpuLoaded] = useState<boolean>(false);
-  const [customWebgpuWeight, setCustomWebgpuWeight] = useState<string>('');
-  const [customWebgpuLib, setCustomWebgpuLib] = useState<string>('');
+  const [customWebgpuWeight, setCustomWebgpuWeight] = useState<string>(() => {
+    return localStorage.getItem('openword_copilot_custom_weight') || '';
+  });
+  const [customWebgpuLib, setCustomWebgpuLib] = useState<string>(() => {
+    return localStorage.getItem('openword_copilot_custom_lib') || '';
+  });
   const cancelWebgpuChatRef = useRef<(() => void) | null>(null);
 
   // Hardware and OS states
   const [hardware, setHardware] = useState<HardwareProfile | null>(null);
-  const [showHardwareTip, setShowHardwareTip] = useState<boolean>(true);
+  const [showHardwareTip, setShowHardwareTip] = useState<boolean>(() => {
+    const saved = localStorage.getItem('openword_copilot_show_hw_tip');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [detectedOS, setDetectedOS] = useState<OSDetails | null>(null);
   const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
   const [selectedOS, setSelectedOS] = useState<'Windows' | 'macOS' | 'Linux'>('Windows');
@@ -82,14 +96,40 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [isControlApiAvailable, setIsControlApiAvailable] = useState<boolean>(false);
 
   // Chat settings
-  const [temperature, setTemperature] = useState<number>(0.7);
-  const [enableMtp, setEnableMtp] = useState<boolean>(true);
-  const [includeContext, setIncludeContext] = useState<boolean>(true);
-  const [directEdit, setDirectEdit] = useState<boolean>(true);
-  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [temperature, setTemperature] = useState<number>(() => {
+    const saved = localStorage.getItem('openword_copilot_temp');
+    return saved ? parseFloat(saved) : 0.7;
+  });
+  const [enableMtp, setEnableMtp] = useState<boolean>(() => {
+    const saved = localStorage.getItem('openword_copilot_mtp');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [includeContext, setIncludeContext] = useState<boolean>(() => {
+    const saved = localStorage.getItem('openword_copilot_context');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [directEdit, setDirectEdit] = useState<boolean>(() => {
+    const saved = localStorage.getItem('openword_copilot_direct_edit');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [showSettings, setShowSettings] = useState<boolean>(() => {
+    const saved = localStorage.getItem('openword_copilot_show_settings');
+    return saved !== null ? saved === 'true' : false;
+  });
 
   // Chat feed states
-  const [messages, setMessages] = useState<ExtendedMessage[]>([]);
+  const [messages, setMessages] = useState<ExtendedMessage[]>(() => {
+    const saved = localStorage.getItem('openword_copilot_messages');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved copilot messages', e);
+      }
+    }
+    return [];
+  });
   const [inputPrompt, setInputPrompt] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [streamedResponse, setStreamedResponse] = useState<string>('');
@@ -105,7 +145,12 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   useEffect(() => {
     const hw = detectHardware();
     setHardware(hw);
-    setSelectedModel(hw.recommendedModel);
+    
+    // Only set default model if not already saved in localStorage
+    const savedModel = localStorage.getItem('openword_copilot_ollama_model');
+    if (!savedModel) {
+      setSelectedModel(hw.recommendedModel);
+    }
 
     const os = detectOS();
     setDetectedOS(os);
@@ -118,7 +163,9 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     // Retrieve and populate filtered edge models
     const edgeList = getAvailableEdgeModels();
     setWebgpuModels(edgeList);
-    if (edgeList.length > 0) {
+    
+    const savedWebgpuModel = localStorage.getItem('openword_copilot_webgpu_model');
+    if (!savedWebgpuModel && edgeList.length > 0) {
       setSelectedWebgpuModel(edgeList[0].model_id);
     }
   }, []);
@@ -127,6 +174,20 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   useEffect(() => {
     const activeModel = modelMode === 'webgpu' ? selectedWebgpuModel : selectedModel;
     const friendlyName = getFriendlyModelName(activeModel);
+    
+    // Check if we already have messages loaded (so we don't overwrite user's saved history)
+    const saved = localStorage.getItem('openword_copilot_messages');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return;
+        }
+      } catch (e) {
+        // Parse error, proceed
+      }
+    }
+
     // If messages are empty or only contain a greeting assistant role, replace the greeting
     if (messages.length === 0 || (messages.length === 1 && messages[0].role === 'assistant')) {
       setMessages([
@@ -157,14 +218,21 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
       // If the recommended gemma4 model size is already pulled, keep it. 
       // Otherwise, pick the first available or default to gemma4
       if (modelList.length > 0) {
-        const hasRecommended = modelList.some(m => m.startsWith(hardware?.recommendedModel || 'gemma4'));
-        if (!hasRecommended) {
-          // Find any gemma model
-          const gemmaModel = modelList.find(m => m.includes('gemma'));
-          if (gemmaModel) {
-            setSelectedModel(gemmaModel);
+        const savedModel = localStorage.getItem('openword_copilot_ollama_model');
+        if (savedModel && modelList.includes(savedModel)) {
+          setSelectedModel(savedModel);
+        } else {
+          const hasRecommended = modelList.some(m => m.startsWith(hardware?.recommendedModel || 'gemma4'));
+          if (!hasRecommended) {
+            // Find any gemma model
+            const gemmaModel = modelList.find(m => m.includes('gemma'));
+            if (gemmaModel) {
+              setSelectedModel(gemmaModel);
+            } else {
+              setSelectedModel(modelList[0]);
+            }
           } else {
-            setSelectedModel(modelList[0]);
+            setSelectedModel(hardware?.recommendedModel || 'gemma4:2b');
           }
         }
       }
@@ -236,6 +304,55 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
       if (cancelWebgpuChatRef.current) cancelWebgpuChatRef.current();
     };
   }, []);
+
+  // Sync state settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_mode', modelMode);
+  }, [modelMode]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_ollama_model', selectedModel);
+  }, [selectedModel]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_webgpu_model', selectedWebgpuModel);
+  }, [selectedWebgpuModel]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_custom_weight', customWebgpuWeight);
+  }, [customWebgpuWeight]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_custom_lib', customWebgpuLib);
+  }, [customWebgpuLib]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_temp', temperature.toString());
+  }, [temperature]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_mtp', enableMtp.toString());
+  }, [enableMtp]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_context', includeContext.toString());
+  }, [includeContext]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_direct_edit', directEdit.toString());
+  }, [directEdit]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_show_settings', showSettings.toString());
+  }, [showSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_show_hw_tip', showHardwareTip.toString());
+  }, [showHardwareTip]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_copilot_messages', JSON.stringify(messages));
+  }, [messages]);
 
   const handleStartPull = async () => {
     const targetModel = downloadModelName === 'custom' ? customModelName.trim() : downloadModelName;
@@ -705,6 +822,23 @@ Response: Certainly, I will delete the outdated paragraph.
     navigator.clipboard.writeText(content);
     alert('Copied response to clipboard!');
   };
+  const handleClearChat = () => {
+    const confirmClear = window.confirm('Are you sure you want to clear the chat history? This cannot be undone.');
+    if (!confirmClear) return;
+
+    const activeModel = modelMode === 'webgpu' ? selectedWebgpuModel : selectedModel;
+    const friendlyName = getFriendlyModelName(activeModel);
+    
+    const defaultGreeting: ExtendedMessage[] = [
+      { 
+        role: 'assistant', 
+        content: `Hello! I am ${friendlyName}, your offline AI co-writer. How can I help you write or edit your document today?` 
+      }
+    ];
+
+    setMessages(defaultGreeting);
+    localStorage.setItem('openword_copilot_messages', JSON.stringify(defaultGreeting));
+  };
 
   return (
     <div className="copilot-panel">
@@ -760,9 +894,26 @@ Response: Certainly, I will delete the outdated paragraph.
                   <Download size={11} />
                 )}
               </button>
+
+              <button 
+                onClick={handleClearChat} 
+                className="copilot-clear-chat-btn" 
+                title="Clear Chat History"
+              >
+                <Trash2 size={13} />
+              </button>
             </div>
           ) : (
-            <span className="unsupported-tag">Unsupported</span>
+            <div className="status-model-row">
+              <span className="unsupported-tag">Unsupported</span>
+              <button 
+                onClick={handleClearChat} 
+                className="copilot-clear-chat-btn" 
+                title="Clear Chat History"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
           )
         ) : (
           isConnected ? (
@@ -782,11 +933,27 @@ Response: Certainly, I will delete the outdated paragraph.
               >
                 <Download size={13} />
               </button>
+              <button 
+                onClick={handleClearChat} 
+                className="copilot-clear-chat-btn" 
+                title="Clear Chat History"
+              >
+                <Trash2 size={13} />
+              </button>
             </div>
           ) : (
-            <button onClick={runConnectionCheck} className="copilot-refresh-btn" title="Retry Check">
-              <RefreshCw size={13} className={isChecking ? 'spinning' : ''} />
-            </button>
+            <div className="status-model-row">
+              <button onClick={runConnectionCheck} className="copilot-refresh-btn" title="Retry Check">
+                <RefreshCw size={13} className={isChecking ? 'spinning' : ''} />
+              </button>
+              <button 
+                onClick={handleClearChat} 
+                className="copilot-clear-chat-btn" 
+                title="Clear Chat History"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
           )
         )}
       </div>

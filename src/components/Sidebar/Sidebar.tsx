@@ -16,11 +16,26 @@ interface HeadingItem {
 
 export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
   const { isSaving, isDirty } = useDocument();
-  const [activeTab, setActiveTab] = useState<'outline' | 'search' | 'properties' | 'copilot'>('outline');
+  const [activeTab, setActiveTab] = useState<'outline' | 'search' | 'properties' | 'copilot'>(() => {
+    const saved = localStorage.getItem('openword_sidebar_tab');
+    return (saved as any) || 'outline';
+  });
   
   // Resizing states and logic
-  const [width, setWidth] = useState(350);
+  const [width, setWidth] = useState<number>(() => {
+    const saved = localStorage.getItem('openword_sidebar_width');
+    return saved ? parseInt(saved, 10) : 350;
+  });
   const [isResizing, setIsResizing] = useState(false);
+
+  // Sync states to localStorage
+  useEffect(() => {
+    localStorage.setItem('openword_sidebar_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('openword_sidebar_width', width.toString());
+  }, [width]);
 
   const startResizing = (mouseDownEvent: React.MouseEvent) => {
     mouseDownEvent.preventDefault();
