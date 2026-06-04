@@ -5,7 +5,8 @@ import {
   File, FolderOpen, Save, FileText, Printer, Bold, Italic, Underline,
   Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered,
   Heading, Image, Link, Columns, Palette, FileCheck,
-  ChevronDown, Moon, Table as TableIcon, Trash2, ArrowUpCircle
+  ChevronDown, Moon, Table as TableIcon, Trash2, ArrowUpCircle,
+  Scissors, Copy, Clipboard, Sparkles
 } from 'lucide-react';
 import { importDocx } from '../../utils/docxImporter';
 import { markdownToHtml } from '../../utils/markdownConverter';
@@ -18,6 +19,7 @@ interface RibbonProps {
   showRuler: boolean;
   onShowRulerChange: (show: boolean) => void;
   onOpenHeaderFooter: () => void;
+  onRelaunchTour: () => void;
 }
 
 const GOOGLE_FONTS = ['Inter', 'Lora', 'Fira Code', 'Playfair Display', 'Roboto', 'Outfit'];
@@ -29,7 +31,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onLayoutModeChange,
   showRuler,
   onShowRulerChange,
-  onOpenHeaderFooter
+  onOpenHeaderFooter,
+  onRelaunchTour
 }) => {
   const {
     docState,
@@ -259,6 +262,114 @@ export const Ribbon: React.FC<RibbonProps> = ({
     window.print();
   };
 
+  const copyTextFallback = (text: string): boolean => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = '0';
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      document.body.removeChild(textArea);
+      return false;
+    }
+  };
+
+  const handleCut = async () => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    if (from === to) return;
+    const text = editor.state.doc.textBetween(from, to, ' ');
+    
+    let success = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        success = true;
+      } catch (err) {
+        console.warn('Modern copy failed, trying fallback:', err);
+      }
+    }
+    
+    if (!success) {
+      success = copyTextFallback(text);
+    }
+    
+    if (success) {
+      editor.chain().focus().deleteRange({ from, to }).run();
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    if (from === to) return;
+    const text = editor.state.doc.textBetween(from, to, ' ');
+    
+    let success = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        success = true;
+      } catch (err) {
+        console.warn('Modern copy failed, trying fallback:', err);
+      }
+    }
+    
+    if (!success) {
+      copyTextFallback(text);
+    }
+  };
+
+  const handlePaste = async () => {
+    if (!editor) return;
+    
+    // Restore focus to the editor first.
+    // Modern browsers require the document/editor to be focused before reading clipboard.
+    editor.commands.focus();
+    
+    // Give the browser a frame to register focus
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    let pastedText = '';
+    let success = false;
+    
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      try {
+        pastedText = await navigator.clipboard.readText();
+        success = true;
+      } catch (err) {
+        console.warn('Modern paste failed, trying fallback prompt:', err);
+      }
+    }
+    
+    if (!success) {
+      const promptText = prompt('Your browser blocked clipboard access. Please paste your text below (Ctrl+V) and click OK:');
+      if (promptText !== null) {
+        pastedText = promptText;
+        success = true;
+      }
+    }
+    
+    if (success && pastedText) {
+      editor.chain().focus().insertContent(pastedText).run();
+    }
+  };
+
   return (
     <div className="ribbon-container no-print">
 
@@ -323,17 +434,17 @@ export const Ribbon: React.FC<RibbonProps> = ({
             {/* Clipboard group */}
             <div className="ribbon-group-card">
               <div className="ribbon-group-controls">
-                <button onClick={createNewDocument} className="tool-btn-large">
-                  <File size={20} className="tool-icon-brand" />
-                  <span>New</span>
+                <button onClick={handlePaste} className="tool-btn-large" title="Paste text from clipboard (Ctrl+V)">
+                  <Clipboard size={20} />
+                  <span>Paste</span>
                 </button>
-                <button onClick={() => fileInputRef.current?.click()} className="tool-btn-large">
-                  <FolderOpen size={20} />
-                  <span>Open</span>
+                <button onClick={handleCopy} className="tool-btn-large" title="Copy selection to clipboard (Ctrl+C)">
+                  <Copy size={20} />
+                  <span>Copy</span>
                 </button>
-                <button onClick={saveActiveFile} className="tool-btn-large">
-                  <Save size={20} />
-                  <span>Save</span>
+                <button onClick={handleCut} className="tool-btn-large" title="Cut selection to clipboard (Ctrl+X)">
+                  <Scissors size={20} />
+                  <span>Cut</span>
                 </button>
               </div>
               <div className="ribbon-group-label">Clipboard</div>
@@ -742,6 +853,23 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 </button>
               </div>
               <div className="ribbon-group-label">Window</div>
+            </div>
+
+            <span className="ribbon-group-card-divider" />
+
+            {/* Help/Tour Group */}
+            <div className="ribbon-group-card">
+              <div className="ribbon-group-controls">
+                <button
+                  onClick={onRelaunchTour}
+                  className="tool-btn-large"
+                  title="Take the interactive tutorial tour again"
+                >
+                  <Sparkles size={20} className="tool-icon-brand" />
+                  <span>Quick Tour</span>
+                </button>
+              </div>
+              <div className="ribbon-group-label">Help</div>
             </div>
           </div>
         )}

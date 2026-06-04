@@ -9,6 +9,7 @@ import { Editor as TiptapEditor } from '@tiptap/react';
 import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff } from 'lucide-react';
 import { getDocument, deleteDocument } from './utils/db';
 import './App.css';
+import { TutorialTour } from './components/Tutorial/TutorialTour';
 
 const AppContent: React.FC = () => {
   const { 
@@ -35,6 +36,15 @@ const AppContent: React.FC = () => {
   });
   const showSidebar = true;
   const [showHeaderFooter, setShowHeaderFooter] = useState(false);
+
+  // Onboarding Tutorial states
+  const [isTourOpen, setIsTourOpen] = useState<boolean>(() => {
+    return localStorage.getItem('openword_onboarding_completed') !== 'true';
+  });
+  const [sidebarTab, setSidebarTab] = useState<'outline' | 'search' | 'properties' | 'copilot'>(() => {
+    const saved = localStorage.getItem('openword_sidebar_tab');
+    return (saved as any) || 'outline';
+  });
 
   // Autosave Recovery dialog visibility
   const [showRecoveryAlert, setShowRecoveryAlert] = useState(false);
@@ -169,6 +179,7 @@ const AppContent: React.FC = () => {
         showRuler={showRuler}
         onShowRulerChange={setShowRuler}
         onOpenHeaderFooter={() => setShowHeaderFooter(true)}
+        onRelaunchTour={() => setIsTourOpen(true)}
       />
 
       {/* 2. Workspace & Sidebars */}
@@ -192,6 +203,8 @@ const AppContent: React.FC = () => {
         <Sidebar
           editor={editor}
           isOpen={showSidebar}
+          activeTab={sidebarTab}
+          setActiveTab={setSidebarTab}
         />
       </div>
 
@@ -224,6 +237,13 @@ const AppContent: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 5. Interactive Animated Tour Overlay */}
+      <TutorialTour
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        setSidebarTab={setSidebarTab}
+      />
     </div>
   );
 };

@@ -7,6 +7,8 @@ import { AICopilot } from './AICopilot';
 interface SidebarProps {
   editor: Editor | null;
   isOpen: boolean;
+  activeTab?: 'outline' | 'search' | 'properties' | 'copilot';
+  setActiveTab?: (tab: 'outline' | 'search' | 'properties' | 'copilot') => void;
 }
 
 interface HeadingItem {
@@ -14,12 +16,27 @@ interface HeadingItem {
   text: string;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+  editor, 
+  isOpen,
+  activeTab: controlledTab,
+  setActiveTab: controlledSetTab
+}) => {
   const { isSaving, isDirty } = useDocument();
-  const [activeTab, setActiveTab] = useState<'outline' | 'search' | 'properties' | 'copilot'>(() => {
+  
+  const [localTab, setLocalTab] = useState<'outline' | 'search' | 'properties' | 'copilot'>(() => {
     const saved = localStorage.getItem('openword_sidebar_tab');
     return (saved as any) || 'outline';
   });
+
+  const activeTab = controlledTab !== undefined ? controlledTab : localTab;
+  const setActiveTab = (tab: 'outline' | 'search' | 'properties' | 'copilot') => {
+    if (controlledSetTab) {
+      controlledSetTab(tab);
+    } else {
+      setLocalTab(tab);
+    }
+  };
   
   // Resizing states and logic
   const [width, setWidth] = useState<number>(() => {

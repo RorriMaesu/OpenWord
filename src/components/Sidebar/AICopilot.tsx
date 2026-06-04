@@ -110,7 +110,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   });
   const [directEdit, setDirectEdit] = useState<boolean>(() => {
     const saved = localStorage.getItem('openword_copilot_direct_edit');
-    return saved !== null ? saved === 'true' : true;
+    return saved !== null ? saved === 'true' : false;
   });
   const [showSettings, setShowSettings] = useState<boolean>(() => {
     const saved = localStorage.getItem('openword_copilot_show_settings');
@@ -827,8 +827,39 @@ Response: Certainly, I will delete the outdated paragraph.
   };
 
   const copyToClipboard = (content: string) => {
-    navigator.clipboard.writeText(content);
-    alert('Copied response to clipboard!');
+    let success = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        navigator.clipboard.writeText(content);
+        success = true;
+      } catch (err) {
+        console.warn('Modern clipboard copy failed, trying fallback:', err);
+      }
+    }
+    
+    if (!success) {
+      const textArea = document.createElement('textarea');
+      textArea.value = content;
+      textArea.style.position = 'fixed';
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        success = document.execCommand('copy');
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+      }
+      document.body.removeChild(textArea);
+    }
+    
+    if (success) {
+      alert('Copied response to clipboard!');
+    } else {
+      alert('Failed to copy response. Please select the text and copy manually.');
+    }
   };
   const handleClearChat = () => {
     const confirmClear = window.confirm('Are you sure you want to clear the chat history? This cannot be undone.');
@@ -1208,6 +1239,26 @@ Response: Certainly, I will delete the outdated paragraph.
         </div>
       )}
 
+      {/* Edit Mode Tabs */}
+      <div className="copilot-mode-tabs">
+        <button 
+          className={`mode-tab-btn ${!directEdit ? 'active' : ''}`}
+          onClick={() => setDirectEdit(false)}
+          title="Review AI suggestions in a sidebar diff card before applying them"
+        >
+          <Sparkles size={13} className="tab-icon" />
+          <span>Proposal Mode</span>
+        </button>
+        <button 
+          className={`mode-tab-btn ${directEdit ? 'active' : ''}`}
+          onClick={() => setDirectEdit(true)}
+          title="Let the AI stream edits directly into your document in real-time"
+        >
+          <RefreshCw size={13} className="tab-icon" />
+          <span>Direct Edit</span>
+        </button>
+      </div>
+
       {/* Main Chat Feed */}
       <div className="copilot-chat-feed">
         {messages.map((msg, i) => (
@@ -1332,21 +1383,6 @@ Response: Certainly, I will delete the outdated paragraph.
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
                 className="control-slider" 
               />
-            </div>
-
-            {/* Direct Edit Mode Toggle */}
-            <div className="control-row">
-              <div className="control-label-col">
-                <span className="control-title">Direct Edit Mode</span>
-                <span className="control-desc">Apply edits directly to the document in real-time</span>
-              </div>
-              <button 
-                onClick={() => setDirectEdit(!directEdit)} 
-                className="control-toggle-switch"
-                title="Toggle Direct Edit Mode"
-              >
-                {directEdit ? <ToggleRight className="toggle-icon active" size={26} /> : <ToggleLeft className="toggle-icon" size={26} />}
-              </button>
             </div>
 
             {/* Document Context Toggle */}
