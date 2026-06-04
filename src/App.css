@@ -3,7 +3,7 @@
 /* Main App Grid Shell */
 .app-shell {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   height: 100vh;
   width: 100vw;
   background-color: var(--bg-app);
@@ -18,11 +18,11 @@
 }
 
 .app-main-workspace.sidebar-closed {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .app-main-workspace.sidebar-open {
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
 }
 
 /* 1. RIBBON TOOLBAR & CONTROLS */
@@ -978,9 +978,10 @@
   border-left: 1px solid var(--border-color);
   background: var(--bg-sheet);
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   z-index: 6;
   animation: slideLeft var(--transition-normal);
+  min-height: 0;
 }
 
 .sidebar-tabs {
@@ -1756,10 +1757,11 @@
 .copilot-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   overflow: hidden;
   background: var(--bg-sheet);
   border-radius: 0 0 8px 8px;
+  min-height: 0;
 }
 
 .copilot-status-bar {
@@ -1960,6 +1962,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 0;
 }
 
 .chat-bubble-row {
@@ -1968,6 +1971,7 @@
   align-items: flex-start;
   max-width: 90%;
   animation: slideUp var(--transition-normal);
+  min-width: 0;
 }
 
 .chat-bubble-row.user {
@@ -1999,6 +2003,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .bubble-text {
