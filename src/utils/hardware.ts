@@ -5,6 +5,31 @@ export interface HardwareProfile {
   reason: string;
 }
 
+function cleanGpuName(rawName: string): string {
+  let name = rawName;
+  
+  // 1. Remove ANGLE prefix wrappers (e.g. ANGLE (NVIDIA, NVIDIA GeForce...))
+  const angleRegex = /ANGLE\s*\([^,]+,\s*([^,]+)/i;
+  const match = name.match(angleRegex);
+  if (match && match[1]) {
+    name = match[1];
+  }
+  
+  // 2. Remove parenthetical hardware hex IDs (e.g. (0x00002D04))
+  name = name.replace(/\(0x[0-9a-fA-F]+\)/g, '');
+  
+  // 3. Split by slash to cut off suffixes (e.g. /PCIe/SSE2)
+  name = name.split('/')[0];
+  
+  // 4. Remove render APIs and shader profiles (e.g. Direct3D11 vs_5_0 ps_5_0)
+  name = name.replace(/(?:Direct3D\d*|D3D\d*|WebGL|OpenGL|Vulkan|vs_\d+_\d+|ps_\d+_\d+)/gi, '');
+  
+  // 5. Trim trailing spaces, commas, slashes, or brackets
+  name = name.replace(/[\s,\(\)\/-]+$/g, '');
+  
+  return name.trim();
+}
+
 export function detectHardware(): HardwareProfile {
   let gpuName = 'Unknown Graphics Adapter';
   let estimatedVramGb = 4; // Safe default for VRAM estimate (e.g. mobile/integrated)
@@ -22,6 +47,9 @@ export function detectHardware(): HardwareProfile {
   } catch (err) {
     console.warn('Failed to query WebGL hardware details:', err);
   }
+
+  // Clean the GPU name for simplified user display and robust heuristics
+  gpuName = cleanGpuName(gpuName);
 
   // Basic device system memory (RAM) in GB (often unified for Apple M-series)
   const systemMemoryGb = (navigator as any).deviceMemory || 8;
