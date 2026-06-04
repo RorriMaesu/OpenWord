@@ -14,7 +14,9 @@ OpenWord is a professional, high-fidelity, client-side word processor built with
 [![Vite](https://img.shields.io/badge/Vite-8.x-646cff?style=flat&logo=vite&logoColor=white)](https://vite.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[![OpenWord Workspace Preview](public/screenshot.png)](https://rorrimaesu.github.io/OpenWord/)
+[![OpenWord Workspace Preview - Light Mode](public/screenshot1.jpg)](https://rorrimaesu.github.io/OpenWord/)
+
+[![OpenWord Workspace Preview - Dark Mode](public/screenshot2.jpg)](https://rorrimaesu.github.io/OpenWord/)
 
 ---
 
