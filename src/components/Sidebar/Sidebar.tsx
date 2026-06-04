@@ -17,6 +17,37 @@ interface HeadingItem {
 export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
   const { isSaving, isDirty } = useDocument();
   const [activeTab, setActiveTab] = useState<'outline' | 'search' | 'properties' | 'copilot'>('outline');
+  
+  // Resizing states and logic
+  const [width, setWidth] = useState(350);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = (mouseDownEvent: React.MouseEvent) => {
+    mouseDownEvent.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (mouseMoveEvent: MouseEvent) => {
+      const newWidth = window.innerWidth - mouseMoveEvent.clientX;
+      const clampedWidth = Math.max(320, Math.min(newWidth, 650));
+      setWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
   const [headings, setHeadings] = useState<HeadingItem[]>([]);
   
   // Search & Replace states
@@ -158,7 +189,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="sidebar-container">
+    <div 
+      className="sidebar-container"
+      style={{ width: `${width}px` }}
+    >
+      {/* Draggable Resizer Handle */}
+      <div 
+        className={`sidebar-resizer-handle ${isResizing ? 'active' : ''}`}
+        onMouseDown={startResizing}
+      />
       {/* Sidebar Tabs Selector */}
       <div className="sidebar-tabs">
         <button 

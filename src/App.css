@@ -22,7 +22,7 @@
 }
 
 .app-main-workspace.sidebar-open {
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 /* 1. RIBBON TOOLBAR & CONTROLS */
@@ -973,7 +973,9 @@
 
 /* 5. COLLAPSIBLE SIDEBAR PANEL */
 .sidebar-container {
-  width: 100%;
+  position: relative;
+  container-type: inline-size;
+  container-name: sidebar;
   height: 100%;
   border-left: 1px solid var(--border-color);
   background: var(--bg-sheet);
@@ -982,6 +984,69 @@
   z-index: 6;
   animation: slideLeft var(--transition-normal);
   min-height: 0;
+}
+
+/* Sidebar Resizer Handle */
+.sidebar-resizer-handle {
+  position: absolute;
+  left: -3px;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 100;
+  background: transparent;
+  transition: background var(--transition-fast);
+}
+
+.sidebar-resizer-handle:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='dark'] .sidebar-resizer-handle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-resizer-handle.active {
+  background: var(--word-blue) !important;
+  box-shadow: 0 0 6px var(--word-blue-light);
+}
+
+/* Dynamic Fluid Typography based on Sidebar Width */
+@container sidebar (min-width: 0px) {
+  .chat-bubble-row .bubble-text {
+    font-size: clamp(12px, 0.72rem + 0.9cqw, 16px);
+  }
+  .copilot-input-field {
+    font-size: clamp(11px, 0.68rem + 0.8cqw, 15px);
+  }
+  .sidebar-tab span {
+    font-size: clamp(9.5px, 0.55rem + 0.6cqw, 12px);
+  }
+  .copilot-model-select {
+    font-size: clamp(10px, 0.6rem + 0.6cqw, 13px);
+  }
+  .copilot-mode-select {
+    font-size: clamp(10px, 0.6rem + 0.6cqw, 13px);
+  }
+  .pane-title {
+    font-size: clamp(11.5px, 0.68rem + 0.8cqw, 15px);
+  }
+  .status-label {
+    font-size: clamp(10px, 0.6rem + 0.6cqw, 13px);
+  }
+  .btn-downloader-start, .btn-downloader-cancel {
+    font-size: clamp(10px, 0.6rem + 0.6cqw, 13px);
+  }
+  .shortcut-tag-btn span {
+    font-size: clamp(9.5px, 0.55rem + 0.6cqw, 12px);
+  }
+  .control-title {
+    font-size: clamp(10.5px, 0.62rem + 0.7cqw, 13.5px);
+  }
+  .control-desc {
+    font-size: clamp(9px, 0.52rem + 0.5cqw, 11px);
+  }
 }
 
 .sidebar-tabs {
