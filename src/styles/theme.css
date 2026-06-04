@@ -1,0 +1,80 @@
+/* OpenWord Sleek Dark/Light Theme System */
+
+:root {
+  /* Font Family definitions */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'Fira Code', 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-serif: 'Lora', 'Playfair Display', Georgia, Cambria, 'Times New Roman', Times, serif;
+
+  /* Classic MS Word Desktop Colors */
+  --word-blue: HSL(218, 77%, 41%); /* Word Blue (#185abd) */
+  --word-blue-hover: HSL(218, 77%, 34%);
+  --word-blue-light: HSL(218, 80%, 95%);
+  --word-orange: HSL(35, 95%, 50%); /* Warn orange sign-in bar */
+  
+  --brand-50: HSL(220, 95%, 97%);
+  --brand-100: HSL(220, 90%, 93%);
+  --brand-200: HSL(221, 85%, 85%);
+  --brand-500: HSL(221, 83%, 53%);
+  --brand-600: HSL(221, 80%, 45%);
+  --brand-700: HSL(222, 80%, 35%);
+  --brand-800: HSL(223, 80%, 25%);
+
+  /* Default Dimensions (A4 Page Size at 96 DPI) */
+  --page-width: 794px;
+  --page-height: 1123px;
+  --page-margin-top: 96px;     /* 1 inch */
+  --page-margin-bottom: 96px;  /* 1 inch */
+  --page-margin-left: 96px;    /* 1 inch */
+  --page-margin-right: 96px;   /* 1 inch */
+  --document-zoom: 1;
+
+  /* Light Theme Defaults (Word Desktop Mockup) */
+  --bg-app: HSL(210, 10%, 93%); /* Word Desktop Workspace backdrop (#e6e6e6) */
+  --bg-sheet: HSL(0, 0%, 100%);  /* White paper sheet background */
+  --bg-ribbon: HSL(210, 10%, 96%); /* Light grey ribbon panel (#f3f2f1) */
+  --border-color: HSL(210, 8%, 85%); /* Border color (#dad9d8) */
+  --text-main: HSL(220, 13%, 18%);
+  --text-muted: HSL(220, 8%, 45%);
+  --text-inverse: HSL(210, 20%, 98%);
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-sheet: 0 1px 3px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.10);
+  
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-blur: blur(0px); /* Flat Desktop View */
+
+  --scrollbar-track: HSL(210, 10%, 90%);
+  --scrollbar-thumb: HSL(210, 10%, 75%);
+  --scrollbar-thumb-hover: HSL(210, 10%, 65%);
+
+  /* Animation Speeds */
+  --transition-fast: 0.1s linear;
+  --transition-normal: 0.15s linear;
+}
+
+/* Dark Theme Tokens override */
+[data-theme='dark'] {
+  --bg-app: HSL(222, 18%, 10%); /* Dark canvas backdrop */
+  --bg-sheet: HSL(224, 20%, 15%); /* Slate gray paper sheet */
+  --bg-ribbon: HSL(224, 20%, 13%); /* Dark ribbon */
+  --border-color: HSL(223, 14%, 22%);
+  --text-main: HSL(210, 15%, 85%);
+  --text-muted: HSL(218, 10%, 60%);
+  --text-inverse: HSL(222, 20%, 8%);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+  --shadow-sheet: 0 2px 8px rgba(0, 0, 0, 0.4);
+
+  --glass-bg: rgba(22, 24, 30, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.05);
+
+  --scrollbar-track: HSL(222, 18%, 12%);
+  --scrollbar-thumb: HSL(222, 14%, 25%);
+  --scrollbar-thumb-hover: HSL(222, 14%, 35%);
+}

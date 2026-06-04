@@ -1,0 +1,206 @@
+import React, { useEffect, useMemo } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import { Table } from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import Image from '@tiptap/extension-image';
+import Color from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+import { TextStyle } from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
+import TextAlign from '@tiptap/extension-text-align';
+
+import { useDocument } from '../../context/DocumentContext';
+import { PageBreakExtension } from './PageBreakExtension';
+import { SearchReplaceExtension } from './SearchReplaceExtension';
+import { VirtualPaginationExtension } from './VirtualPaginationExtension';
+import { Ruler } from '../Ruler/Ruler';
+
+// Custom TextStyle extension to handle inline font size attribute
+const CustomTextStyle = TextStyle.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      fontSize: {
+        default: null,
+        parseHTML: (element: any) => element.style.fontSize,
+        renderHTML: (attributes: any) => {
+          if (!attributes.fontSize) return {};
+          return { style: `font-size: ${attributes.fontSize}` };
+        }
+      }
+    };
+  }
+});
+
+interface EditorProps {
+  layoutMode: 'pageless' | 'print';
+  showRuler: boolean;
+  onEditorReady: (editor: any) => void;
+}
+
+export const Editor: React.FC<EditorProps> = ({
+  layoutMode,
+  showRuler,
+  onEditorReady
+}) => {
+  const { docState, updateContent, saveActiveFile } = useDocument();
+  const { zoom, pageSize, orientation } = docState;
+
+  const extensions = useMemo(() => [
+    StarterKit.configure({
+      // Use custom styling for code blocks and rules
+      horizontalRule: false, 
+    }),
+    Underline,
+    Link.configure({
+      openOnClick: false,
+      HTMLAttributes: { class: 'editor-link' }
+    }),
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableCell,
+    TableHeader,
+    Image.configure({
+      allowBase64: true,
+      HTMLAttributes: { class: 'editor-image' }
+    }),
+    CustomTextStyle,
+    FontFamily,
+    Color,
+    Highlight.configure({ multicolor: true }),
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    PageBreakExtension,
+    SearchReplaceExtension,
+    VirtualPaginationExtension.configure({
+      headers: docState.headers,
+      footers: docState.footers
+    }),
+  ], []);
+
+  const editor = useEditor({
+    extensions,
+    content: docState.content,
+    onUpdate: ({ editor }) => {
+      // Commit Tiptap JSON content state to our global document context
+      updateContent(editor.getJSON());
+    }
+  });
+
+  // Synchronize headers and footers dynamically
+  useEffect(() => {
+    if (editor) {
+      editor.setOptions({
+        virtualPagination: {
+          headers: docState.headers,
+          footers: docState.footers
+        }
+      } as any);
+      // Force trigger view redraw to sync decorations text
+      editor.view.dispatch(editor.view.state.tr);
+    }
+  }, [docState.headers, docState.footers, editor]);
+
+  // Expose editor instance back to parent (App.tsx)
+  useEffect(() => {
+    if (editor) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
+
+  // Synchronize Content if loaded from external file importer
+  useEffect(() => {
+    if (editor && docState.content && editor.getJSON() !== docState.content) {
+      // Only set content if it's different to prevent resetting cursor selection
+      // Mammoth imports HTML, we check if we need to load HTML or JSON
+      const json = docState.content;
+      // If we just loaded an empty file or new template, populate it
+      if (json.type === 'doc') {
+        editor.commands.setContent(json, { emitUpdate: false });
+      }
+    }
+  }, [docState.content, editor]);
+
+  // Listen for Ctrl+S keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveActiveFile();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saveActiveFile]);
+
+  if (!editor) return null;
+
+  // Calculate dimensions for simulated pages (matches ruler)
+  const isLandscape = orientation === 'landscape';
+  const width = pageSize === 'Letter' 
+    ? (isLandscape ? 1056 : 816) 
+    : (isLandscape ? 1123 : 794);
+
+  return (
+    <div className={`editor-workspace-container ${layoutMode === 'print' ? 'print-mode' : 'pageless-mode'}`}>
+      {/* Visual top ruler matching document scale */}
+      {layoutMode === 'print' && showRuler && <Ruler />}
+
+      {/* Editor zooming framework */}
+      <div 
+        className="editor-zoom-wrapper"
+        style={{
+          transform: `scale(${zoom})`,
+          transformOrigin: 'top center',
+          width: layoutMode === 'print' ? `${width}px` : '100%',
+        }}
+      >
+        <div 
+          className="editor-sheet-canvas"
+          style={{
+            width: layoutMode === 'print' ? `${width}px` : '100%',
+            paddingTop: layoutMode === 'print' ? 'var(--page-margin-top)' : '40px',
+            paddingBottom: layoutMode === 'print' ? 'var(--page-margin-bottom)' : '40px',
+            paddingLeft: layoutMode === 'print' ? 'var(--page-margin-left)' : 'max(40px, calc((100% - 800px) / 2))',
+            paddingRight: layoutMode === 'print' ? 'var(--page-margin-right)' : 'max(40px, calc((100% - 800px) / 2))',
+          }}
+        >
+          {/* Header visual indicator */}
+          {layoutMode === 'print' && docState.headers.default && (
+            <div 
+              className="editor-header-overlay"
+              style={{
+                left: 'var(--page-margin-left)',
+                right: 'var(--page-margin-right)',
+                top: 'calc(var(--page-margin-top) / 2 - 10px)'
+              }}
+            >
+              {docState.headers.default}
+            </div>
+          )}
+
+          {/* Core Tiptap Content area */}
+          <EditorContent editor={editor} />
+
+          {/* Footer visual indicator */}
+          {layoutMode === 'print' && docState.footers.default && (
+            <div 
+              className="editor-footer-overlay"
+              style={{
+                left: 'var(--page-margin-left)',
+                right: 'var(--page-margin-right)',
+                bottom: 'calc(var(--page-margin-bottom) / 2 - 10px)'
+              }}
+            >
+              {docState.footers.default}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
