@@ -1543,6 +1543,32 @@
   gap: 12px;
 }
 
+.app-brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.app-logo-svg {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 2px 4px rgba(0, 120, 212, 0.2));
+  transition: transform var(--transition-normal);
+}
+
+.app-brand-logo:hover .app-logo-svg {
+  transform: rotate(8deg) scale(1.05);
+}
+
+.app-brand-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.3px;
+}
+
 .autosave-toggle-container {
   display: flex;
   align-items: center;

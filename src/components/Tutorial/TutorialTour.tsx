@@ -18,7 +18,7 @@ interface TutorialTourProps {
 const TOUR_STEPS: TourStep[] = [
   {
     target: 'body',
-    title: 'Welcome to OpenWord! 📝',
+    title: 'Welcome to OpenWord!',
     description: 'Let\'s take a quick 1-minute tour to explore your high-fidelity, client-side word processor and its premium offline features.',
     placement: 'center'
   },
@@ -272,8 +272,24 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
           <span className="tour-progress">Step {currentStep + 1} of {TOUR_STEPS.length}</span>
         </div>
 
-        <h3 className="tour-step-title">{step.title}</h3>
-        <p className="tour-step-desc">{step.description}</p>
+        {currentStep === 0 && (
+          <div className="tour-welcome-brand" style={{ display: 'flex', justifyContent: 'center', margin: '8px 0 16px 0' }}>
+            <svg viewBox="0 0 24 24" style={{ width: '48px', height: '48px' }} fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="tour-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0078d4" />
+                  <stop offset="100%" stopColor="#00b4fc" />
+                </linearGradient>
+              </defs>
+              <path d="M16 2H8C5.79086 2 4 3.79086 4 6V18C4 20.2091 5.79086 22 8 22H16C18.2091 22 20 20.2091 20 18V6C20 3.79086 18.2091 2 16 2Z" fill="url(#tour-logo-grad)" />
+              <circle cx="12" cy="12" r="5" stroke="white" strokeWidth="1.8" strokeDasharray="24 6" strokeLinecap="round" />
+              <path d="M9.5 10L11 14L12 12L13 14L14.5 10" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        )}
+
+        <h3 className="tour-step-title" style={{ textAlign: currentStep === 0 ? 'center' : 'left' }}>{step.title}</h3>
+        <p className="tour-step-desc" style={{ textAlign: currentStep === 0 ? 'center' : 'left' }}>{step.description}</p>
 
         {/* Dynamic visual indicator inside tooltip */}
         <div className="tour-progress-bar-container">

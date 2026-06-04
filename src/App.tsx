@@ -107,6 +107,24 @@ const AppContent: React.FC = () => {
       {/* Microsoft Word Dark Blue Desktop Title Bar */}
       <div className="word-titlebar no-print">
         <div className="titlebar-left">
+          {/* App Branding Logo */}
+          <div className="app-brand-logo" title="OpenWord desktop application">
+            <svg viewBox="0 0 24 24" className="app-logo-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0078d4" />
+                  <stop offset="100%" stopColor="#00b4fc" />
+                </linearGradient>
+              </defs>
+              <path d="M16 2H8C5.79086 2 4 3.79086 4 6V18C4 20.2091 5.79086 22 8 22H16C18.2091 22 20 20.2091 20 18V6C20 3.79086 18.2091 2 16 2Z" fill="url(#logo-grad)" />
+              <circle cx="12" cy="12" r="5" stroke="white" strokeWidth="1.8" strokeDasharray="24 6" strokeLinecap="round" />
+              <path d="M9.5 10L11 14L12 12L13 14L14.5 10" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="app-brand-name">OpenWord</span>
+          </div>
+
+          <span className="titlebar-divider" />
+
           {/* AutoSave toggle switch */}
           <div className="autosave-toggle-container">
             <span className="autosave-label">AutoSave</span>
