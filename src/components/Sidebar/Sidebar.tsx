@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDocument } from '../../context/DocumentContext';
-import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database } from 'lucide-react';
+import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles } from 'lucide-react';
 import { Editor } from '@tiptap/react';
+import { AICopilot } from './AICopilot';
 
 interface SidebarProps {
   editor: Editor | null;
@@ -15,7 +16,7 @@ interface HeadingItem {
 
 export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
   const { isSaving, isDirty } = useDocument();
-  const [activeTab, setActiveTab] = useState<'outline' | 'search' | 'properties'>('outline');
+  const [activeTab, setActiveTab] = useState<'outline' | 'search' | 'properties' | 'copilot'>('outline');
   const [headings, setHeadings] = useState<HeadingItem[]>([]);
   
   // Search & Replace states
@@ -184,6 +185,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
           <Info size={18} />
           <span>Info</span>
         </button>
+        <button 
+          className={`sidebar-tab ${activeTab === 'copilot' ? 'active' : ''}`}
+          onClick={() => setActiveTab('copilot')}
+          title="AI Writing Copilot"
+        >
+          <Sparkles size={18} />
+          <span>Copilot</span>
+        </button>
       </div>
 
       {/* Tab Contents */}
@@ -342,6 +351,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ editor, isOpen }) => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* AI Writing Copilot Tab */}
+        {activeTab === 'copilot' && (
+          <AICopilot editor={editor} />
         )}
 
       </div>
