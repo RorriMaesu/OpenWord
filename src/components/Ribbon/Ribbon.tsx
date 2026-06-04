@@ -738,7 +738,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <button
                   onClick={() => {
                     const isDark = document.body.parentElement?.getAttribute('data-theme') === 'dark';
-                    document.body.parentElement?.setAttribute('data-theme', isDark ? 'light' : 'dark');
+                    const newTheme = isDark ? 'light' : 'dark';
+                    document.body.parentElement?.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('openword_theme', newTheme);
                   }}
                   className="tool-btn-large"
                 >

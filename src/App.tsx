@@ -11,19 +11,50 @@ import { getDocument, deleteDocument } from './utils/db';
 import './App.css';
 
 const AppContent: React.FC = () => {
-  const { docState, updateTitle, saveActiveFile, restoreAutosave } = useDocument();
+  const { 
+    docState, 
+    updateTitle, 
+    saveActiveFile, 
+    restoreAutosave, 
+    updateLayoutMode,
+    autoSaveEnabled,
+    setAutoSaveEnabled
+  } = useDocument();
   
   // Editor instance reference
   const [editor, setEditor] = useState<TiptapEditor | null>(null);
 
   // App Layout options
-  const [layoutMode, setLayoutMode] = useState<'pageless' | 'print'>('print');
-  const [showRuler, setShowRuler] = useState(true);
+  const [layoutMode, setLayoutMode] = useState<'pageless' | 'print'>(() => {
+    const saved = localStorage.getItem('openword_layout_mode');
+    return (saved as 'pageless' | 'print') || 'print';
+  });
+  const [showRuler, setShowRuler] = useState<boolean>(() => {
+    const saved = localStorage.getItem('openword_show_ruler');
+    return saved !== null ? saved === 'true' : true;
+  });
   const showSidebar = true;
   const [showHeaderFooter, setShowHeaderFooter] = useState(false);
 
   // Autosave Recovery dialog visibility
   const [showRecoveryAlert, setShowRecoveryAlert] = useState(false);
+
+  // Sync theme from localStorage on startup
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('openword_theme') || 'light';
+    document.body.parentElement?.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  // Sync layout mode to localStorage & DocumentContext
+  useEffect(() => {
+    localStorage.setItem('openword_layout_mode', layoutMode);
+    updateLayoutMode(layoutMode);
+  }, [layoutMode, updateLayoutMode]);
+
+  // Sync showRuler to localStorage
+  useEffect(() => {
+    localStorage.setItem('openword_show_ruler', showRuler.toString());
+  }, [showRuler]);
 
   // Check for auto-recovery document on startup
   useEffect(() => {
@@ -57,8 +88,6 @@ const AppContent: React.FC = () => {
       console.error('Failed to delete autosaved document:', err);
     }
   };
-
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
 
   const triggerUndo = () => editor?.commands.undo();
   const triggerRedo = () => editor?.commands.redo();

@@ -23,6 +23,8 @@ interface DocumentContextType {
   openLocalFile: (data: { name: string; html: string; margins: any; pageSize: any; orientation: any; headers: any; footers: any }) => void;
   createNewDocument: () => void;
   restoreAutosave: () => Promise<boolean>;
+  autoSaveEnabled: boolean;
+  setAutoSaveEnabled: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const DEFAULT_DOC_STATE: DocumentState = {
@@ -73,9 +75,18 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [activeFileName, setActiveFileName] = useState('Untitled.docx');
   const [isDirty, setIsDirty] = useState(false);
 
-  // Autosave loop - triggers every 5 seconds if document is dirty
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('openword_autosave_enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
+
   useEffect(() => {
-    if (!isDirty) return;
+    localStorage.setItem('openword_autosave_enabled', autoSaveEnabled.toString());
+  }, [autoSaveEnabled]);
+
+  // Autosave loop - triggers every 5 seconds if document is dirty and autosave is enabled
+  useEffect(() => {
+    if (!isDirty || !autoSaveEnabled) return;
     
     const interval = setInterval(async () => {
       try {
@@ -277,7 +288,9 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         saveAsNewFile,
         openLocalFile,
         createNewDocument,
-        restoreAutosave
+        restoreAutosave,
+        autoSaveEnabled,
+        setAutoSaveEnabled
       }}
     >
       <div style={{ display: 'contents' }} className={layoutMode === 'print' ? 'layout-print' : 'layout-pageless'}>
