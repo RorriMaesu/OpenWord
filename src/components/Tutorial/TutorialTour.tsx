@@ -23,7 +23,7 @@ const TOUR_STEPS: TourStep[] = [
     placement: 'center'
   },
   {
-    target: '.ruler-outer-container',
+    target: '.ruler-inner',
     title: 'Interactive Page Ruler 📏',
     description: 'Adjust document margins on the fly by dragging the handles on either side. Text automatically shifts and wraps in real-time.',
     placement: 'top'
@@ -89,7 +89,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
     }
 
     // Toggle simulation class on ruler during step 1 (Ruler handle)
-    const ruler = document.querySelector('.ruler-outer-container');
+    const ruler = document.querySelector('.ruler-inner');
     if (ruler) {
       if (currentStep === 1) {
         ruler.classList.add('simulating-ruler');
@@ -98,19 +98,10 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
       }
     }
 
-    // Position tooltip relative to targeted element and add active highlight class
+    // Position tooltip relative to targeted element
     const updatePosition = () => {
-      // First clean up all previous target classes
-      document.querySelectorAll('.tutorial-target-active').forEach(el => {
-        el.classList.remove('tutorial-target-active');
-      });
-
       const element = document.querySelector(step.target);
       if (element) {
-        if (step.target !== 'body') {
-          element.classList.add('tutorial-target-active');
-        }
-
         const rect = element.getBoundingClientRect();
         setCoords({
           top: rect.top + window.scrollY,
@@ -131,9 +122,6 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
     return () => {
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition);
-      document.querySelectorAll('.tutorial-target-active').forEach(el => {
-        el.classList.remove('tutorial-target-active');
-      });
     };
   }, [currentStep, isOpen, setSidebarTab]);
 
@@ -159,13 +147,8 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
     // Clear simulation animations
     const sidebar = document.querySelector('.sidebar-container');
     if (sidebar) sidebar.classList.remove('simulating-resize');
-    const ruler = document.querySelector('.ruler-outer-container');
+    const ruler = document.querySelector('.ruler-inner');
     if (ruler) ruler.classList.remove('simulating-ruler');
-    
-    // Clear highlighting classes
-    document.querySelectorAll('.tutorial-target-active').forEach(el => {
-      el.classList.remove('tutorial-target-active');
-    });
     
     localStorage.setItem('openword_onboarding_completed', 'true');
     onClose();

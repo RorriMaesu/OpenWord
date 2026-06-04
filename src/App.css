@@ -3679,13 +3679,7 @@ mark {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-.tutorial-target-active {
-  position: relative !important;
-  z-index: 1260 !important;
-  outline: 2px solid var(--word-blue) !important;
-  outline-offset: 2px !important;
-  box-shadow: 0 0 12px rgba(0, 120, 212, 0.45) !important;
-}
+/* Target active class z-index conflicts removed */
 
 .tour-close-btn {
   position: absolute;
@@ -3884,12 +3878,13 @@ mark {
   50% { opacity: 0.3; }
   100% { opacity: 0.8; }
 }
-.ruler-outer-container.simulating-ruler::after {
+.ruler-inner.simulating-ruler::after {
   content: '';
   position: absolute;
   inset: 0;
   background: rgba(0, 120, 212, 0.08);
   pointer-events: none;
   animation: ruler-opacity-pulse 1.5s infinite ease-in-out;
+  z-index: 10;
 }
 
