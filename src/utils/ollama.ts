@@ -19,8 +19,11 @@ let cachedControlUrl: string | null = null;
 export async function getControlApiUrl(): Promise<string | null> {
   if (cachedControlUrl) return cachedControlUrl;
 
+  const isLocal = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
   const candidates = [
-    '/api/ollama-control',
+    ...(isLocal ? ['/api/ollama-control'] : []),
     'http://localhost:5173/api/ollama-control',
     'http://127.0.0.1:5173/api/ollama-control',
     'http://localhost:5174/api/ollama-control',

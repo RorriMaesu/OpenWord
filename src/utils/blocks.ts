@@ -86,3 +86,75 @@ export function applyBlockOperations(editor: Editor, operations: BlockOperation[
 
   chain.run();
 }
+
+/**
+ * Helper to wrap the inner content of a block HTML tag with a <mark> tag.
+ */
+function wrapInnerHtmlInMark(html: string): string {
+  const match = html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>([\s\S]*)<\/([a-zA-Z0-9]+)>$/);
+  if (match && match[1] === match[4]) {
+    const tagName = match[1];
+    const attrs = match[2];
+    const innerContent = match[3];
+    return `<${tagName}${attrs}><mark>${innerContent}</mark></${tagName}>`;
+  }
+  return `<p><mark>${html.replace(/<\/?p>/g, '')}</mark></p>`;
+}
+
+export function streamEditBlock(editor: Editor, index: number, html: string, isFinal = false) {
+  const blocks = serializeEditorToBlocks(editor);
+  const targetBlock = blocks.find(b => b.index === index);
+  if (!targetBlock) return;
+
+  let contentHtml = html.trim();
+  
+  // If the content doesn't start with an HTML tag, wrap it using the original block's tag structure
+  if (!contentHtml.startsWith('<')) {
+    const tagMatch = targetBlock.html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>/);
+    if (tagMatch) {
+      const tagName = tagMatch[1];
+      const attrs = tagMatch[2];
+      contentHtml = `<${tagName}${attrs}>${contentHtml}</${tagName}>`;
+    } else {
+      contentHtml = `<p>${contentHtml}</p>`;
+    }
+  }
+
+  const finalHtml = isFinal ? contentHtml : wrapInnerHtmlInMark(contentHtml);
+
+  editor.chain().focus().insertContentAt({ from: targetBlock.start, to: targetBlock.end }, finalHtml).run();
+}
+
+/**
+ * Create a new empty block after a specific index.
+ * Returns the index of the newly created block.
+ */
+export function insertPlaceholderBlock(editor: Editor, afterIndex: number, type = 'paragraph'): number {
+  const blocks = serializeEditorToBlocks(editor);
+  
+  if (afterIndex === -1) {
+    const content = type === 'heading' ? '<h1><mark>...</mark></h1>' : '<p><mark>...</mark></p>';
+    editor.chain().focus().insertContentAt(0, content).run();
+    return 0;
+  }
+
+  const targetBlock = blocks.find(b => b.index === afterIndex);
+  if (!targetBlock) return -1;
+
+  const content = type === 'heading' ? '<h1><mark>...</mark></h1>' : '<p><mark>...</mark></p>';
+  editor.chain().focus().insertContentAt(targetBlock.end, content).run();
+  
+  return afterIndex + 1;
+}
+
+/**
+ * Delete a block at a specific index.
+ */
+export function executeDeleteBlock(editor: Editor, index: number) {
+  const blocks = serializeEditorToBlocks(editor);
+  const targetBlock = blocks.find(b => b.index === index);
+  if (!targetBlock) return;
+
+  editor.chain().focus().deleteRange({ from: targetBlock.start, to: targetBlock.end }).run();
+}
+

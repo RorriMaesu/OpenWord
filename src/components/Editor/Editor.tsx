@@ -55,6 +55,8 @@ export const Editor: React.FC<EditorProps> = ({
     StarterKit.configure({
       // Use custom styling for code blocks and rules
       horizontalRule: false, 
+      underline: false,
+      link: false,
     }),
     Underline,
     Link.configure({
@@ -114,13 +116,15 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Synchronize Content if loaded from external file importer
   useEffect(() => {
-    if (editor && docState.content && editor.getJSON() !== docState.content) {
-      // Only set content if it's different to prevent resetting cursor selection
-      // Mammoth imports HTML, we check if we need to load HTML or JSON
-      const json = docState.content;
-      // If we just loaded an empty file or new template, populate it
-      if (json.type === 'doc') {
-        editor.commands.setContent(json, { emitUpdate: false });
+    if (editor && docState.content) {
+      const currentJson = editor.getJSON();
+      // Fast deep comparison using JSON stringify to check if structural content changed
+      if (JSON.stringify(currentJson) !== JSON.stringify(docState.content)) {
+        const json = docState.content;
+        // If we just loaded an empty file or new template, populate it
+        if (json.type === 'doc') {
+          editor.commands.setContent(json, { emitUpdate: false });
+        }
       }
     }
   }, [docState.content, editor]);

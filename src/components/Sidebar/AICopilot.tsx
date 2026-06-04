@@ -14,6 +14,8 @@ import type { HardwareProfile, OSDetails } from '../../utils/hardware';
 import { serializeEditorToBlocks } from '../../utils/blocks';
 import type { DocumentBlock, BlockOperation } from '../../utils/blocks';
 import { CopilotDiffCard } from './CopilotDiffCard';
+import { AgentStreamParser } from '../../utils/agentParser';
+import type { ToolCallEvent } from '../../utils/agentParser';
 
 interface AICopilotProps {
   editor: Editor | null;
@@ -28,30 +30,7 @@ interface ExtendedMessage {
   status?: 'pending' | 'applied' | 'rejected';
 }
 
-function parseAssistantResponse(text: string): { content: string; operations?: BlockOperation[]; explanation?: string } {
-  const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-  const match = text.match(jsonRegex);
 
-  if (match) {
-    const rawJson = match[1].trim();
-    const cleanContent = text.replace(jsonRegex, '').trim();
-
-    try {
-      const parsed = JSON.parse(rawJson);
-      if (parsed.operations && Array.isArray(parsed.operations)) {
-        return {
-          content: cleanContent || parsed.explanation || 'Proposed document edits:',
-          operations: parsed.operations,
-          explanation: parsed.explanation
-        };
-      }
-    } catch (e) {
-      console.warn('Failed to parse proposed operations JSON from AI response:', e);
-    }
-  }
-
-  return { content: text };
-}
 
 export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   // Connection and model states
@@ -84,6 +63,8 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [inputPrompt, setInputPrompt] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [streamedResponse, setStreamedResponse] = useState<string>('');
+  const [streamedOperations, setStreamedOperations] = useState<BlockOperation[]>([]);
+  const [streamedOriginalBlocks, setStreamedOriginalBlocks] = useState<DocumentBlock[]>([]);
   const cancelStreamRef = useRef<(() => void) | null>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
 
@@ -205,6 +186,11 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     setIsGenerating(true);
     setStreamedResponse('');
 
+    // Capture original blocks snapshot before streaming starts
+    const originalBlocks = editor ? serializeEditorToBlocks(editor) : [];
+    setStreamedOriginalBlocks(originalBlocks);
+    setStreamedOperations([]);
+
     // Construct request message pipeline
     const pipeline: OllamaMessage[] = [];
 
@@ -215,6 +201,48 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
       blockContext = `[CURRENT DOCUMENT BLOCKS]:\n` + 
         currentBlocks.map(b => `Block ${b.index} (${b.type}): "${b.text}"`).join('\n') + '\n\n';
     }
+
+    const systemPromptBase = `You are an expert AI writing collaborator and editor. You can help the user edit their document.
+You have direct, real-time access to modify the document. To perform edits, inserts, or deletes, you must output special XML tags inline within your response.
+
+Supported tags:
+1. Edit an existing block:
+<edit_block index="N">new block content HTML</edit_block>
+(This replaces the content of the block at index N)
+
+2. Insert a new block:
+<insert_block after="N" type="paragraph">new block content HTML</insert_block>
+(This inserts a new block after the block at index N. Use type="paragraph" or type="heading". To insert at the very beginning of the document, use after="-1".)
+
+3. Delete an existing block:
+<delete_block index="N" />
+(This deletes the block at index N. This is a self-closing tag and should be written exactly as shown.)
+
+Rules:
+1. Conversational text: Any text outside of these XML tags will be streamed directly into the chat bubble. Use conversational text to explain what edits you are making or to chat with the user.
+2. Index references: Refer to the current document blocks list provided below to find the correct block indices.
+3. HTML content: The content inside the tags must be valid HTML (e.g. paragraphs, headings) using basic formatting like <strong>, <em>, etc. if needed.
+4. Output flow: You can write conversational explanations first, and then output the XML tags to perform the edits. Or you can output them in any order. The changes will type themselves out in the editor in real-time!
+5. IMPORTANT: Do not use standard markdown code blocks or json blocks for operations. Use ONLY the specified XML tags for document modification.
+
+---
+EXAMPLES OF CORRECT ACTIONS:
+
+Example 1: Edit block 1
+User request: Make the first paragraph more formal.
+Response: I have rewritten the first paragraph to be more formal:
+<edit_block index="1">We are pleased to announce the launch of our new software platform, designed to streamline your daily editing tasks.</edit_block>
+
+Example 2: Insert after block 0
+User request: Add a subheading after block 0 about installation.
+Response: Here is the installation section:
+<insert_block after="0" type="heading">System Setup and Installation</insert_block>
+
+Example 3: Delete block 2
+User request: Remove the paragraph about old features.
+Response: Certainly, I will delete the outdated paragraph.
+<delete_block index="2" />
+---`;
 
     if (includeContext && editor) {
       const textSelection = editor.state.doc.textBetween(
@@ -235,58 +263,12 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
 
       pipeline.push({
         role: 'system',
-        content: `You are an expert AI writing collaborator and editor. You can help the user edit their document.
-To edit, insert, or delete paragraphs, headings, lists, or tables in the document, you MUST output a structured JSON block wrapped inside a \`\`\`json\`\`\` code block at the very end of your response.
-
-Supported operations in the operations array:
-- { "type": "edit", "index": <number>, "html": "<p>new block content html</p>" } (replaces the content of block at index)
-- { "type": "insert", "index": <number>, "html": "<p>new block content html</p>" } (inserts a new block AFTER the block at index. Use index -1 to insert at the very beginning of the document)
-- { "type": "delete", "index": <number> } (removes the block at index)
-
-Rules:
-1. Always output valid HTML for the "html" field, using basic inline tags like <strong>, <em>, <a href="...">, etc. if needed.
-2. Refer to the current document blocks list provided below to identify the block indices.
-3. If the user request is just a conversational question (no modifications requested), do NOT output a JSON block. Only output a JSON block when editing is requested.
-
-Example JSON output format:
-\`\`\`json
-{
-  "explanation": "I made the first paragraph more formal.",
-  "operations": [
-    { "type": "edit", "index": 1, "html": "<p>Revised text here...</p>" }
-  ]
-}
-\`\`\`
-
-${contextText}${blockContext}`
+        content: `${systemPromptBase}\n\n${contextText}${blockContext}`
       });
     } else {
       pipeline.push({
         role: 'system',
-        content: `You are an expert AI writing collaborator and editor. You can help the user edit their document.
-To edit, insert, or delete paragraphs, headings, lists, or tables in the document, you MUST output a structured JSON block wrapped inside a \`\`\`json\`\`\` code block at the very end of your response.
-
-Supported operations in the operations array:
-- { "type": "edit", "index": <number>, "html": "<p>new block content html</p>" } (replaces the content of block at index)
-- { "type": "insert", "index": <number>, "html": "<p>new block content html</p>" } (inserts a new block AFTER the block at index. Use index -1 to insert at the very beginning of the document)
-- { "type": "delete", "index": <number> } (removes the block at index)
-
-Rules:
-1. Always output valid HTML for the "html" field, using basic inline tags like <strong>, <em>, <a href="...">, etc. if needed.
-2. Refer to the current document blocks list provided below to identify the block indices.
-3. If the user request is just a conversational question (no modifications requested), do NOT output a JSON block. Only output a JSON block when editing is requested.
-
-Example JSON output format:
-\`\`\`json
-{
-  "explanation": "I made the first paragraph more formal.",
-  "operations": [
-    { "type": "edit", "index": 1, "html": "<p>Revised text here...</p>" }
-  ]
-}
-\`\`\`
-
-${blockContext}`
+        content: `${systemPromptBase}\n\n${blockContext}`
       });
     }
 
@@ -299,37 +281,103 @@ ${blockContext}`
       draft_num_predict: enableMtp ? 4 : 0
     };
 
+    const parser = new AgentStreamParser(
+      (conversationalText) => {
+        setStreamedResponse(conversationalText);
+      },
+      (event: ToolCallEvent) => {
+        // Build the live streamedOperations list in real-time as the chunks arrive
+        setStreamedOperations(prev => {
+          const updated = [...prev];
+          
+          let wrappedHtml = event.content.trim();
+          if (!wrappedHtml.startsWith('<')) {
+            if (event.type === 'insert') {
+              const tag = event.blockType === 'heading' ? 'h1' : 'p';
+              wrappedHtml = `<${tag}>${wrappedHtml}</${tag}>`;
+            } else if (event.type === 'edit') {
+              const targetBlock = originalBlocks.find(b => b.index === event.index);
+              const tagMatch = targetBlock?.html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>/);
+              if (tagMatch) {
+                const tagName = tagMatch[1];
+                const attrs = tagMatch[2];
+                wrappedHtml = `<${tagName}${attrs}>${wrappedHtml}</${tagName}>`;
+              } else {
+                wrappedHtml = `<p>${wrappedHtml}</p>`;
+              }
+            }
+          }
+
+          const lastOp = updated[updated.length - 1];
+          if (lastOp && lastOp.type === event.type && lastOp.index === event.index) {
+            updated[updated.length - 1] = {
+              ...lastOp,
+              html: wrappedHtml
+            };
+          } else {
+            updated.push({
+              type: event.type,
+              index: event.index,
+              html: event.type !== 'delete' ? wrappedHtml : undefined
+            });
+          }
+          return updated;
+        });
+      }
+    );
+
     const cancel = await streamOllamaChat(
       selectedModel,
       pipeline,
       options,
       (chunk) => {
-        setStreamedResponse(prev => {
-          const newText = prev + chunk;
-          const jsonStartIndex = newText.indexOf('```json');
-          if (jsonStartIndex !== -1) {
-            return newText.substring(0, jsonStartIndex).trim() + '\n\n[Analyzing edits...]';
-          }
-          return newText;
-        });
+        parser.appendChunk(chunk);
       },
-      (doneText) => {
-        const parsed = parseAssistantResponse(doneText);
-        const currentBlocks = editor ? serializeEditorToBlocks(editor) : [];
+      (_doneText) => {
+        parser.finalize();
+
+        // Convert the finalized events to BlockOperations
+        const finalOps: BlockOperation[] = parser.getFinalizedEvents().map(event => {
+          let wrappedHtml = event.content.trim();
+          if (!wrappedHtml.startsWith('<')) {
+            if (event.type === 'insert') {
+              const tag = event.blockType === 'heading' ? 'h1' : 'p';
+              wrappedHtml = `<${tag}>${wrappedHtml}</${tag}>`;
+            } else if (event.type === 'edit') {
+              const targetBlock = originalBlocks.find(b => b.index === event.index);
+              const tagMatch = targetBlock?.html.trim().match(/^<([a-zA-Z0-9]+)([^>]*)>/);
+              if (tagMatch) {
+                const tagName = tagMatch[1];
+                const attrs = tagMatch[2];
+                wrappedHtml = `<${tagName}${attrs}>${wrappedHtml}</${tagName}>`;
+              } else {
+                wrappedHtml = `<p>${wrappedHtml}</p>`;
+              }
+            }
+          }
+          return {
+            type: event.type,
+            index: event.index,
+            html: event.type !== 'delete' ? wrappedHtml : undefined
+          };
+        });
+
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: parsed.content,
-          operations: parsed.operations,
-          explanation: parsed.explanation,
-          originalBlocks: currentBlocks,
-          status: parsed.operations ? 'pending' : undefined
+          content: parser.getConversationalText(),
+          operations: finalOps,
+          originalBlocks: originalBlocks,
+          status: finalOps.length > 0 ? 'pending' : undefined
         }]);
         setStreamedResponse('');
+        setStreamedOperations([]);
         setIsGenerating(false);
       },
       (err) => {
         console.error('Ollama Stream error:', err);
         setMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: Connection lost or request failed. Please check that Ollama is serving ${selectedModel}.` }]);
+        setStreamedResponse('');
+        setStreamedOperations([]);
         setIsGenerating(false);
       }
     );
@@ -342,6 +390,7 @@ ${blockContext}`
       cancelStreamRef.current();
       setMessages(prev => [...prev, { role: 'assistant', content: streamedResponse + ' [Generation Cancelled]' }]);
       setStreamedResponse('');
+      setStreamedOperations([]);
       setIsGenerating(false);
     }
   };
@@ -533,13 +582,25 @@ ${blockContext}`
         ))}
 
         {/* Live streaming text bubble */}
-        {isGenerating && streamedResponse && (
+        {isGenerating && (streamedResponse || streamedOperations.length > 0) && (
           <div className="chat-bubble-row assistant streaming">
             <div className="bubble-avatar">
               <Bot size={14} className="spinning" />
             </div>
             <div className="bubble-content-card">
-              <div className="bubble-text">{streamedResponse}</div>
+              {streamedResponse && <div className="bubble-text">{streamedResponse}</div>}
+              
+              {streamedOperations.length > 0 && (
+                <CopilotDiffCard
+                  editor={editor}
+                  operations={streamedOperations}
+                  originalBlocks={streamedOriginalBlocks}
+                  status="pending"
+                  onStatusChange={() => {}}
+                  readOnly={true}
+                />
+              )}
+
               <div className="streaming-actions">
                 <button onClick={handleCancelGeneration} className="btn-cancel-gen">Stop Generating</button>
               </div>

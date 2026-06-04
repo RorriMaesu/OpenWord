@@ -10,6 +10,7 @@ interface CopilotDiffCardProps {
   originalBlocks: DocumentBlock[];
   status: 'pending' | 'applied' | 'rejected';
   onStatusChange: (newStatus: 'applied' | 'rejected') => void;
+  readOnly?: boolean;
 }
 
 export const CopilotDiffCard: React.FC<CopilotDiffCardProps> = ({
@@ -18,6 +19,7 @@ export const CopilotDiffCard: React.FC<CopilotDiffCardProps> = ({
   originalBlocks,
   status,
   onStatusChange,
+  readOnly = false,
 }) => {
   const handleAccept = () => {
     if (!editor) return;
@@ -127,25 +129,31 @@ export const CopilotDiffCard: React.FC<CopilotDiffCardProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="diff-card-actions">
-        <button 
-          onClick={handleReject} 
-          className="btn-diff-action reject"
-          title="Discard edits"
-        >
-          <X size={14} />
-          <span>Reject</span>
-        </button>
-        <button 
-          onClick={handleAccept} 
-          className="btn-diff-action accept"
-          disabled={!editor}
-          title="Apply edits to document"
-        >
-          <Check size={14} />
-          <span>Accept & Apply</span>
-        </button>
-      </div>
+      {readOnly ? (
+        <div className="diff-card-actions streaming-status">
+          <span className="spinner-dots">Generating proposed edits...</span>
+        </div>
+      ) : (
+        <div className="diff-card-actions">
+          <button 
+            onClick={handleReject} 
+            className="btn-diff-action reject"
+            title="Discard edits"
+          >
+            <X size={14} />
+            <span>Reject</span>
+          </button>
+          <button 
+            onClick={handleAccept} 
+            className="btn-diff-action accept"
+            disabled={!editor}
+            title="Apply edits to document"
+          >
+            <Check size={14} />
+            <span>Accept & Apply</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

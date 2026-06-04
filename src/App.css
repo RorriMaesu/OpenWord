@@ -2953,3 +2953,47 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+/* ==========================================
+   9. REAL-TIME COPILOT EDITING HIGHLIGHTS
+   ========================================== */
+
+mark {
+  background-color: rgba(168, 85, 247, 0.12) !important;
+  border-bottom: 2px dashed #a855f7;
+  color: inherit;
+  padding: 1px 0;
+  border-radius: 2px;
+  transition: background-color 0.3s ease;
+  animation: copilot-pulse 2s infinite ease-in-out;
+}
+
+@keyframes copilot-pulse {
+  0% { background-color: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.6); }
+  50% { background-color: rgba(168, 85, 247, 0.18); border-color: rgba(168, 85, 247, 1); }
+  100% { background-color: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.6); }
+}
+
+[data-theme='dark'] mark {
+  background-color: rgba(168, 85, 247, 0.15) !important;
+  border-color: #a855f7;
+}
+
+/* Fallback/additional styling helpers for writing & deleting */
+.copilot-writing-text {
+  border: 1px dashed #a855f7;
+  background-color: rgba(168, 85, 247, 0.08);
+  animation: copilot-pulse 2s infinite ease-in-out;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.copilot-deleted-block {
+  animation: copilot-fade-out 0.5s forwards ease-out;
+}
+
+@keyframes copilot-fade-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95); }
+}
+
