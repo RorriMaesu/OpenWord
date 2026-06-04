@@ -3683,7 +3683,7 @@ mark {
   box-shadow: 0 0 0 3px var(--word-blue), 0 0 0 9999px rgba(15, 23, 42, 0.15);
   pointer-events: none;
   z-index: 1250;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .tutorial-tooltip-card {
@@ -3697,7 +3697,7 @@ mark {
   z-index: 1300;
   color: var(--text-main);
   pointer-events: auto;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 [data-theme='dark'] .tutorial-tooltip-card {
@@ -3983,5 +3983,36 @@ mark {
 
 [data-theme='dark'] .tool-btn-large.support-btn:hover {
   color: #ffcc00;
+}
+
+/* Titlebar Support Button */
+.titlebar-support-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-right: 12px;
+  height: 24px;
+  box-sizing: border-box;
+}
+
+.titlebar-support-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #ffcc00;
+}
+
+.titlebar-support-btn .coffee-icon {
+  color: #ffcc00;
+  display: flex;
+  align-items: center;
 }
 

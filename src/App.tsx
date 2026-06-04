@@ -6,7 +6,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { HeaderFooterManager } from './components/Editor/HeaderFooterManager';
 import { Editor as TiptapEditor } from '@tiptap/react';
-import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff } from 'lucide-react';
+import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee } from 'lucide-react';
 import { getDocument, deleteDocument } from './utils/db';
 import './App.css';
 import { TutorialTour } from './components/Tutorial/TutorialTour';
@@ -172,6 +172,17 @@ const AppContent: React.FC = () => {
 
         {/* Right: User / Windows Controls */}
         <div className="titlebar-right">
+          <a 
+            href="https://buymeacoffee.com/rorrimaesu" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="titlebar-support-btn"
+            title="Support OpenWord / Buy Me a Coffee"
+          >
+            <Coffee size={12} className="coffee-icon" />
+            <span>Support</span>
+          </a>
+
           <div className="titlebar-search-box">
             <Search size={12} className="search-icon" />
             <input type="text" placeholder="Search" />
