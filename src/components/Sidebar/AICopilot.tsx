@@ -30,6 +30,9 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [detectedOS, setDetectedOS] = useState<OSDetails | null>(null);
   const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
   const [selectedOS, setSelectedOS] = useState<'Windows' | 'macOS' | 'Linux'>('Windows');
+  const [downloadStarted, setDownloadStarted] = useState<boolean>(false);
+
+  const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   // Chat settings
   const [temperature, setTemperature] = useState<number>(0.7);
@@ -320,16 +323,25 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
           <div className="alert-body">
             <h4>Local LLM Client Off</h4>
             <p>Ollama was not detected running on port 11434.</p>
-            <div className="alert-actions">
+            <div className="alert-actions flex-wrap">
+              {isLocalEnv ? (
+                <button 
+                  onClick={handleLaunchOllama} 
+                  className="btn-alert-primary"
+                  disabled={isLaunching}
+                >
+                  {isLaunching ? 'Spawning Daemon...' : 'Launch Ollama'}
+                </button>
+              ) : (
+                <div className="manual-launch-tip">
+                  <small>💡 Open Ollama on your computer to connect</small>
+                </div>
+              )}
               <button 
-                onClick={handleLaunchOllama} 
-                className="btn-alert-primary"
-                disabled={isLaunching}
-              >
-                {isLaunching ? 'Spawning Daemon...' : 'Launch Ollama'}
-              </button>
-              <button 
-                onClick={() => setShowInstallModal(true)} 
+                onClick={() => {
+                  setDownloadStarted(false);
+                  setShowInstallModal(true);
+                }} 
                 className="btn-alert-secondary"
                 title="Download and installation help"
               >
@@ -572,6 +584,12 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
                   {detectedOS?.osName === selectedOS && <span className="recommended-badge">Recommended</span>}
                 </div>
 
+                {downloadStarted && (
+                  <div className="download-started-alert">
+                    <span>📥 <strong>Download triggered!</strong> Your browser is downloading the installer package directly. Please check your browser's download manager/icon to run the setup file.</span>
+                  </div>
+                )}
+
                 <div className="install-instructions">
                   {selectedOS === 'Windows' && (
                     <div className="instruction-pane">
@@ -582,8 +600,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
                       </ol>
                       <a 
                         href="https://ollama.com/download/OllamaSetup.exe" 
-                        target="_blank" 
-                        rel="noreferrer"
+                        onClick={() => setDownloadStarted(true)}
                         className="btn-download-action"
                       >
                         Download Ollama for Windows
@@ -600,8 +617,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
                       </ol>
                       <a 
                         href="https://ollama.com/download/Ollama.dmg" 
-                        target="_blank" 
-                        rel="noreferrer"
+                        onClick={() => setDownloadStarted(true)}
                         className="btn-download-action"
                       >
                         Download Ollama for macOS
