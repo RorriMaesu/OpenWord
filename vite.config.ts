@@ -20,33 +20,66 @@ export default defineConfig({
               try {
                 const data = JSON.parse(body || '{}');
                 if (data.action === 'launch') {
-                  const isWindows = process.platform === 'win32';
-                  if (isWindows) {
+                  let launchCommand = '';
+                  
+                  if (process.platform === 'win32') {
                     const localAppData = process.env.LOCALAPPDATA || path.join(process.env.USERPROFILE || '', 'AppData', 'Local');
-                    const userInstallPath = path.join(localAppData, 'Programs', 'Ollama', 'ollama app.exe');
-                    const systemInstallPath = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Ollama', 'ollama.exe');
-                    
-                    if (fs.existsSync(userInstallPath)) {
-                      exec(`start "" "${userInstallPath}"`);
-                    } else if (fs.existsSync(systemInstallPath)) {
-                      exec(`start "" "${systemInstallPath}"`);
+                    const appData = process.env.APPDATA || path.join(process.env.USERPROFILE || '', 'AppData', 'Roaming');
+                    const programData = process.env.ProgramData || 'C:\\ProgramData';
+                    const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+
+                    const winPaths = [
+                      path.join(localAppData, 'Programs', 'Ollama', 'ollama app.exe'),
+                      path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Ollama.lnk'),
+                      path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Ollama', 'Ollama.lnk'),
+                      path.join(programData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Ollama.lnk'),
+                      path.join(programData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Ollama', 'Ollama.lnk'),
+                      path.join(programFiles, 'Ollama', 'ollama.exe')
+                    ];
+
+                    const foundPath = winPaths.find(p => fs.existsSync(p));
+                    if (foundPath) {
+                      launchCommand = `start "" "${foundPath}"`;
                     } else {
-                      exec('start "" "ollama app"').on('error', () => {
-                        exec('start "" "ollama"');
-                      });
+                      launchCommand = 'start "" "ollama app"'; // Fallback
                     }
                   } else if (process.platform === 'darwin') {
-                    const appPath = '/Applications/Ollama.app';
-                    if (fs.existsSync(appPath)) {
-                      exec('open -a Ollama');
+                    const home = process.env.HOME || '';
+                    const macPaths = [
+                      '/Applications/Ollama.app',
+                      path.join(home, 'Applications', 'Ollama.app')
+                    ];
+                    const foundPath = macPaths.find(p => fs.existsSync(p));
+                    if (foundPath) {
+                      launchCommand = `open -a "${foundPath}"`;
                     } else {
-                      exec('open -a Ollama');
+                      launchCommand = 'open -a Ollama'; // Fallback
                     }
                   } else {
-                    exec('ollama serve &');
+                    // Linux
+                    const home = process.env.HOME || '';
+                    const linuxPaths = [
+                      '/usr/local/bin/ollama',
+                      '/usr/bin/ollama',
+                      path.join(home, '.local', 'bin', 'ollama'),
+                      path.join(home, 'bin', 'ollama')
+                    ];
+                    const foundPath = linuxPaths.find(p => fs.existsSync(p));
+                    if (foundPath) {
+                      launchCommand = `nohup "${foundPath}" serve > /dev/null 2>&1 &`;
+                    } else {
+                      launchCommand = 'ollama serve &'; // Fallback
+                    }
                   }
+
+                  exec(launchCommand, (err) => {
+                    if (err && process.platform === 'win32' && launchCommand !== 'start "" "ollama"') {
+                      exec('start "" "ollama"');
+                    }
+                  });
+
                   res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ success: true, message: 'Launch command triggered' }));
+                  res.end(JSON.stringify({ success: true, message: `Launch command triggered: ${launchCommand}` }));
                   return;
                 }
               } catch (e: any) {
