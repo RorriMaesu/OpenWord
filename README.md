@@ -3,7 +3,9 @@
 OpenWord is a professional, high-fidelity, client-side word processor built with React, TypeScript, and Tiptap. It simulates a premium Microsoft Word desktop interface directly in your browser, featuring virtual pagination, dynamic margins, a responsive floating ribbon menu, auto-saving, and dark mode support.
 
 [![Live Demo](https://img.shields.io/badge/Demo-Live%20on%20GitHub%20Pages-185abd?style=for-the-badge&logo=githubpages&logoColor=white)](https://rorrimaesu.github.io/OpenWord/)
-[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/rorrimaesu)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/rorrimaesu)
+
+[![OpenWord Workspace Preview](public/screenshot.png)](https://rorrimaesu.github.io/OpenWord/)
 
 ---
 
