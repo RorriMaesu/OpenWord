@@ -90,6 +90,12 @@ export const Editor: React.FC<EditorProps> = ({
     onUpdate: ({ editor }) => {
       // Commit Tiptap JSON content state to our global document context
       updateContent(editor.getJSON());
+    },
+    onFocus: ({ editor }) => {
+      const text = editor.getText().trim().replace(/\s+/g, ' ');
+      if (text === 'Welcome to OpenWord Start writing your document here...') {
+        editor.commands.clearContent(true);
+      }
     }
   });
 

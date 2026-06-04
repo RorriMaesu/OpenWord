@@ -458,6 +458,14 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
 
     if (!forcedPrompt) setInputPrompt('');
     
+    // Clear welcome text if present before AI processes
+    if (editor) {
+      const text = editor.getText().trim().replace(/\s+/g, ' ');
+      if (text === 'Welcome to OpenWord Start writing your document here...') {
+        editor.commands.clearContent(true);
+      }
+    }
+
     // Construct user message
     const userMsg: ExtendedMessage = { role: 'user', content: promptToSend };
     const currentMessages = [...messages, userMsg];
