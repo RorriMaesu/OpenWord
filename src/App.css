@@ -1012,42 +1012,7 @@
   box-shadow: 0 0 6px var(--word-blue-light);
 }
 
-/* Dynamic Fluid Typography based on Sidebar Width */
-@container sidebar (min-width: 0px) {
-  .chat-bubble-row .bubble-text {
-    font-size: clamp(12px, 0.72rem + 0.9cqw, 22px);
-  }
-  .copilot-input-field {
-    font-size: clamp(11px, 0.68rem + 0.8cqw, 20px);
-  }
-  .sidebar-tab span {
-    font-size: clamp(9.5px, 0.55rem + 0.6cqw, 16px);
-  }
-  .copilot-model-select {
-    font-size: clamp(10px, 0.6rem + 0.6cqw, 16px);
-  }
-  .copilot-mode-select {
-    font-size: clamp(10px, 0.6rem + 0.6cqw, 16px);
-  }
-  .pane-title {
-    font-size: clamp(11.5px, 0.68rem + 0.8cqw, 20px);
-  }
-  .status-label {
-    font-size: clamp(10px, 0.6rem + 0.6cqw, 16px);
-  }
-  .btn-downloader-start, .btn-downloader-cancel {
-    font-size: clamp(10px, 0.6rem + 0.6cqw, 16px);
-  }
-  .shortcut-tag-btn span {
-    font-size: clamp(9.5px, 0.55rem + 0.6cqw, 15px);
-  }
-  .control-title {
-    font-size: clamp(10.5px, 0.62rem + 0.7cqw, 17px);
-  }
-  .control-desc {
-    font-size: clamp(9px, 0.52rem + 0.5cqw, 14px);
-  }
-}
+
 
 .sidebar-tabs {
   display: flex;
@@ -3521,5 +3486,105 @@ mark {
 @keyframes copilot-fade-out {
   from { opacity: 1; transform: scale(1); }
   to { opacity: 0; transform: scale(0.95); }
+}
+
+/* Dynamic Fluid Typography based on Sidebar Width */
+@container sidebar (min-width: 0px) {
+  .sidebar-container .chat-bubble-row .bubble-text {
+    font-size: clamp(12px, 0.72rem + 0.9cqw, 22px);
+  }
+  .sidebar-container .copilot-input-field {
+    font-size: clamp(11px, 0.68rem + 0.8cqw, 20px);
+    height: clamp(36px, 2rem + 1.2cqw, 64px);
+    min-height: clamp(36px, 2rem + 1.2cqw, 64px);
+  }
+  .sidebar-container .sidebar-tab {
+    font-size: clamp(9.5px, 0.55rem + 0.6cqw, 16px);
+  }
+  .sidebar-container .sidebar-tab svg {
+    width: clamp(14px, 0.8rem + 0.6cqw, 22px);
+    height: clamp(14px, 0.8rem + 0.6cqw, 22px);
+  }
+  .sidebar-container .copilot-model-select,
+  .sidebar-container .copilot-mode-select {
+    font-size: clamp(10px, 0.6rem + 0.6cqw, 16px);
+    max-width: clamp(120px, 7rem + 4cqw, 240px);
+  }
+  .sidebar-container .pane-title {
+    font-size: clamp(11.5px, 0.68rem + 0.8cqw, 20px);
+  }
+  .sidebar-container .status-indicator-wrapper {
+    font-size: clamp(10px, 0.6rem + 0.6cqw, 16px);
+  }
+  .sidebar-container .status-led {
+    width: clamp(6px, 0.35rem + 0.3cqw, 12px);
+    height: clamp(6px, 0.35rem + 0.3cqw, 12px);
+  }
+  .sidebar-container .copilot-clear-chat-btn,
+  .sidebar-container .copilot-download-toggle-btn,
+  .sidebar-container .copilot-refresh-btn,
+  .sidebar-container .webgpu-action-btn {
+    font-size: clamp(9px, 0.5rem + 0.5cqw, 14px);
+    height: clamp(22px, 1.3rem + 0.8cqw, 36px);
+    width: clamp(22px, 1.3rem + 0.8cqw, 36px);
+    padding: clamp(3px, 0.2rem + 0.3cqw, 6px);
+  }
+  .sidebar-container .copilot-clear-chat-btn svg,
+  .sidebar-container .copilot-download-toggle-btn svg,
+  .sidebar-container .copilot-refresh-btn svg,
+  .sidebar-container .webgpu-action-btn svg {
+    width: 1.1em;
+    height: 1.1em;
+  }
+  .sidebar-container .shortcut-tag-btn {
+    font-size: clamp(9.5px, 0.55rem + 0.6cqw, 15px);
+    padding: clamp(3px, 0.2rem + 0.3cqw, 6px) clamp(6px, 0.4rem + 0.5cqw, 12px);
+    border-radius: clamp(10px, 0.6rem + 0.5cqw, 16px);
+  }
+  .sidebar-container .shortcut-tag-btn svg {
+    width: 1.1em;
+    height: 1.1em;
+  }
+  .sidebar-container .controls-toggle-btn {
+    font-size: clamp(9.5px, 0.55rem + 0.6cqw, 15px);
+  }
+  .sidebar-container .controls-toggle-btn svg {
+    width: 1.2em;
+    height: 1.2em;
+  }
+  .sidebar-container .toggle-indicator {
+    font-size: clamp(7px, 0.4rem + 0.4cqw, 12px);
+  }
+  .sidebar-container .control-title {
+    font-size: clamp(10.5px, 0.62rem + 0.7cqw, 17px);
+  }
+  .sidebar-container .control-desc {
+    font-size: clamp(9px, 0.52rem + 0.5cqw, 14px);
+  }
+  .sidebar-container .downloader-header span {
+    font-size: clamp(10.5px, 0.62rem + 0.7cqw, 18px);
+  }
+  .sidebar-container .downloader-label {
+    font-size: clamp(9px, 0.52rem + 0.5cqw, 15px);
+  }
+  .sidebar-container .downloader-select,
+  .sidebar-container .downloader-text-input {
+    font-size: clamp(10px, 0.6rem + 0.6cqw, 16px);
+  }
+  .sidebar-container .downloader-help-link {
+    font-size: clamp(8.5px, 0.5rem + 0.5cqw, 14px);
+  }
+  .sidebar-container .btn-downloader-start,
+  .sidebar-container .btn-downloader-cancel {
+    font-size: clamp(10px, 0.6rem + 0.6cqw, 16px);
+  }
+  .sidebar-container .copilot-send-btn {
+    width: clamp(28px, 1.6rem + 1.2cqw, 48px);
+    height: clamp(28px, 1.6rem + 1.2cqw, 48px);
+  }
+  .sidebar-container .copilot-send-btn svg {
+    width: 1.2em;
+    height: 1.2em;
+  }
 }
 
