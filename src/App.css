@@ -3914,3 +3914,74 @@ mark {
   z-index: 10;
 }
 
+/* Sidebar Support Card (Buy Me a Coffee) */
+.sidebar-support-card {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--bg-app);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all var(--transition-normal);
+}
+
+.sidebar-support-card:hover {
+  border-style: solid;
+  border-color: #ffcc00;
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.support-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.support-card-icon {
+  color: #ffcc00;
+}
+
+.support-card-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.bmc-button-link {
+  display: inline-block;
+  transition: transform var(--transition-fast);
+}
+
+.bmc-button-link:hover {
+  transform: scale(1.05);
+}
+
+.bmc-button-img {
+  height: 36px !important;
+  width: auto !important;
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Ribbon Support Button hover styling */
+.tool-btn-large.support-btn {
+  text-decoration: none !important;
+}
+
+.tool-btn-large.support-btn:hover {
+  color: #c99b00;
+}
+
+[data-theme='dark'] .tool-btn-large.support-btn:hover {
+  color: #ffcc00;
+}
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDocument } from '../../context/DocumentContext';
-import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles } from 'lucide-react';
+import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles, Coffee } from 'lucide-react';
 import { Editor } from '@tiptap/react';
 import { AICopilot } from './AICopilot';
 
@@ -420,6 +420,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="prop-value">IndexedDB / Local</span>
                 </div>
               </div>
+            </div>
+
+            <div className="sidebar-support-card">
+              <div className="support-card-header">
+                <Coffee size={16} className="support-card-icon" />
+                <span>Support OpenWord</span>
+              </div>
+              <p className="support-card-text">
+                OpenWord runs entirely in your browser with 100% privacy. If it helps you write or create, consider supporting development!
+              </p>
+              <a 
+                href="https://buymeacoffee.com/rorrimaesu" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bmc-button-link"
+              >
+                <img 
+                  src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" 
+                  alt="Buy Me A Coffee" 
+                  className="bmc-button-img"
+                />
+              </a>
             </div>
           </div>
         )}

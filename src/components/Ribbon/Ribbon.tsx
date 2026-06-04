@@ -6,7 +6,7 @@ import {
   Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered,
   Heading, Image, Link, Columns, Palette, FileCheck,
   ChevronDown, Moon, Table as TableIcon, Trash2, ArrowUpCircle,
-  Scissors, Copy, Clipboard, Sparkles
+  Scissors, Copy, Clipboard, Sparkles, Coffee
 } from 'lucide-react';
 import { importDocx } from '../../utils/docxImporter';
 import { markdownToHtml } from '../../utils/markdownConverter';
@@ -868,6 +868,16 @@ export const Ribbon: React.FC<RibbonProps> = ({
                   <Sparkles size={20} className="tool-icon-brand" />
                   <span>Quick Tour</span>
                 </button>
+                <a
+                  href="https://buymeacoffee.com/rorrimaesu"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="tool-btn-large support-btn"
+                  title="Support OpenWord development"
+                >
+                  <Coffee size={20} style={{ color: '#ffcc00' }} />
+                  <span>Donate</span>
+                </a>
               </div>
               <div className="ribbon-group-label">Help</div>
             </div>
