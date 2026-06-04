@@ -17,36 +17,36 @@ interface TutorialTourProps {
 
 const TOUR_STEPS: TourStep[] = [
   {
-    target: '.word-titlebar',
+    target: 'body',
     title: 'Welcome to OpenWord! 📝',
     description: 'Let\'s take a quick 1-minute tour to explore your high-fidelity, client-side word processor and its premium offline features.',
-    placement: 'bottom'
+    placement: 'center'
   },
   {
     target: '.ruler-container',
     title: 'Interactive Page Ruler 📏',
     description: 'Adjust document margins on the fly by dragging the handles on either side. Text automatically shifts and wraps in real-time.',
-    placement: 'bottom'
+    placement: 'top'
   },
   {
     target: '.sidebar-resizer-handle',
     title: 'Resizable Sidebar ↔️',
     description: 'You can drag the sidebar border to expand it up to 1020px for a wide, comfortable split-screen view while co-writing with the AI.',
-    placement: 'left'
+    placement: 'right'
   },
   {
     target: '.copilot-mode-tabs',
     title: 'AI Proposal & Direct Edit Modes 🤖',
     description: 'Toggle between Proposal Mode (review visual red/green diff cards and click Accept/Reject) and Direct Edit Mode (stream text directly into the page).',
     sidebarTab: 'copilot',
-    placement: 'left'
+    placement: 'bottom'
   },
   {
     target: '.sidebar-tabs',
     title: 'Navigation Outline Map 🧭',
     description: 'Switch tabs here to use the auto-updating document map, run advanced Find & Replace, or inspect document properties and autosave state.',
     sidebarTab: 'outline',
-    placement: 'left'
+    placement: 'bottom'
   },
   {
     target: '.autosave-toggle-container',
@@ -98,10 +98,19 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
       }
     }
 
-    // Position tooltip relative to targeted element
+    // Position tooltip relative to targeted element and add active highlight class
     const updatePosition = () => {
+      // First clean up all previous target classes
+      document.querySelectorAll('.tutorial-target-active').forEach(el => {
+        el.classList.remove('tutorial-target-active');
+      });
+
       const element = document.querySelector(step.target);
       if (element) {
+        if (step.target !== 'body') {
+          element.classList.add('tutorial-target-active');
+        }
+
         const rect = element.getBoundingClientRect();
         setCoords({
           top: rect.top + window.scrollY,
@@ -122,6 +131,9 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
     return () => {
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition);
+      document.querySelectorAll('.tutorial-target-active').forEach(el => {
+        el.classList.remove('tutorial-target-active');
+      });
     };
   }, [currentStep, isOpen, setSidebarTab]);
 
@@ -149,6 +161,11 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
     if (sidebar) sidebar.classList.remove('simulating-resize');
     const ruler = document.querySelector('.ruler-container');
     if (ruler) ruler.classList.remove('simulating-ruler');
+    
+    // Clear highlighting classes
+    document.querySelectorAll('.tutorial-target-active').forEach(el => {
+      el.classList.remove('tutorial-target-active');
+    });
     
     localStorage.setItem('openword_onboarding_completed', 'true');
     onClose();
@@ -196,7 +213,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
   return (
     <div className="tutorial-tour-overlay">
       {/* Visual focus highlight box */}
-      {coords && (
+      {coords && step.target !== 'body' && (
         <div 
           className="tutorial-highlight-box"
           style={{
