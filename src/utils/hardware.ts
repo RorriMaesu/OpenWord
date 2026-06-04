@@ -164,3 +164,48 @@ export function detectHardware(): HardwareProfile {
     reason
   };
 }
+
+export interface OSDetails {
+  osName: 'Windows' | 'macOS' | 'Linux';
+  downloadUrl: string;
+  installCommand?: string;
+  instructions: string[];
+}
+
+export function detectOS(): OSDetails {
+  const ua = navigator.userAgent;
+  const platform = (navigator as any).userAgentData?.platform || navigator.platform || '';
+
+  if (/mac/i.test(platform) || /macintosh|mac os x/i.test(ua)) {
+    return {
+      osName: 'macOS',
+      downloadUrl: 'https://ollama.com/download/mac',
+      instructions: [
+        'Download the official ZIP archive (Ollama-darwin.zip).',
+        'Extract the archive and drag the Ollama application into your Applications folder.',
+        'Launch the Ollama app to register commands and start the local service.'
+      ]
+    };
+  } else if (/linux/i.test(platform) || /linux/i.test(ua)) {
+    return {
+      osName: 'Linux',
+      downloadUrl: 'https://ollama.com/download/linux',
+      installCommand: 'curl -fsSL https://ollama.com/install.sh | sh',
+      instructions: [
+        'Open a terminal shell.',
+        'Copy the installation command block below.',
+        'Paste and execute it in your terminal to automatically install the Ollama systemd daemon.'
+      ]
+    };
+  } else {
+    return {
+      osName: 'Windows',
+      downloadUrl: 'https://ollama.com/download/windows',
+      instructions: [
+        'Download the official Windows installer (OllamaSetup.exe).',
+        'Run the setup wizard and follow the install prompts.',
+        'Locate the Ollama logo in your Windows system tray to verify the process is active.'
+      ]
+    };
+  }
+}

@@ -9,8 +9,8 @@ import {
   streamOllamaChat
 } from '../../utils/ollama';
 import type { OllamaMessage } from '../../utils/ollama';
-import { detectHardware } from '../../utils/hardware';
-import type { HardwareProfile } from '../../utils/hardware';
+import { detectHardware, detectOS } from '../../utils/hardware';
+import type { HardwareProfile, OSDetails } from '../../utils/hardware';
 
 interface AICopilotProps {
   editor: Editor | null;
@@ -24,9 +24,12 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [selectedModel, setSelectedModel] = useState<string>('gemma4:2b');
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
 
-  // Hardware states
+  // Hardware and OS states
   const [hardware, setHardware] = useState<HardwareProfile | null>(null);
   const [showHardwareTip, setShowHardwareTip] = useState<boolean>(true);
+  const [detectedOS, setDetectedOS] = useState<OSDetails | null>(null);
+  const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
+  const [selectedOS, setSelectedOS] = useState<'Windows' | 'macOS' | 'Linux'>('Windows');
 
   // Chat settings
   const [temperature, setTemperature] = useState<number>(0.7);
@@ -52,6 +55,10 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     const hw = detectHardware();
     setHardware(hw);
     setSelectedModel(hw.recommendedModel);
+
+    const os = detectOS();
+    setDetectedOS(os);
+    setSelectedOS(os.osName);
   }, []);
 
   // Ollama connection polling
@@ -131,7 +138,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
       }, 500);
     } else {
       setIsLaunching(false);
-      alert('Unable to spawn local daemon automatically. Please launch the Ollama Desktop application on your machine.');
+      setShowInstallModal(true);
     }
   };
 
@@ -315,6 +322,13 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
                 disabled={isLaunching}
               >
                 {isLaunching ? 'Spawning Daemon...' : 'Launch Ollama'}
+              </button>
+              <button 
+                onClick={() => setShowInstallModal(true)} 
+                className="btn-alert-secondary"
+                title="Download and installation help"
+              >
+                Install Assistant
               </button>
             </div>
             <div className="cors-instruction">
@@ -507,6 +521,133 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
           <Send size={15} />
         </button>
       </div>
+
+      {/* 5. Glassmorphic Ollama Installation Assistant Modal */}
+      {showInstallModal && (
+        <div className="install-modal-backdrop" onClick={() => setShowInstallModal(false)}>
+          <div className="install-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="install-modal-header">
+              <Sparkles className="install-modal-icon animate-pulse" size={20} />
+              <h3>Ollama Installation Assistant</h3>
+              <button className="install-modal-close" onClick={() => setShowInstallModal(false)}>×</button>
+            </div>
+            
+            <div className="install-modal-body">
+              <p className="install-intro-text">
+                Ollama allows you to run models like Gemma 4 completely offline on your own machine. We detected your system configuration.
+              </p>
+
+              {/* OS Selection Tabs */}
+              <div className="os-tabs">
+                <button 
+                  className={`os-tab-btn ${selectedOS === 'Windows' ? 'active' : ''}`}
+                  onClick={() => setSelectedOS('Windows')}
+                >
+                  Windows
+                </button>
+                <button 
+                  className={`os-tab-btn ${selectedOS === 'macOS' ? 'active' : ''}`}
+                  onClick={() => setSelectedOS('macOS')}
+                >
+                  macOS
+                </button>
+                <button 
+                  className={`os-tab-btn ${selectedOS === 'Linux' ? 'active' : ''}`}
+                  onClick={() => setSelectedOS('Linux')}
+                >
+                  Linux
+                </button>
+              </div>
+
+              {/* OS Content details */}
+              <div className="os-install-content">
+                <div className="detected-badge">
+                  <span>Detected Platform:</span> 
+                  <strong className="detected-tag">{detectedOS?.osName || 'Unknown'}</strong>
+                  {detectedOS?.osName === selectedOS && <span className="recommended-badge">Recommended</span>}
+                </div>
+
+                <div className="install-instructions">
+                  {selectedOS === 'Windows' && (
+                    <div className="instruction-pane">
+                      <ol className="step-list">
+                        <li>Download the official Windows installer.</li>
+                        <li>Run the <code>OllamaSetup.exe</code> file.</li>
+                        <li>Verify Ollama is active by checking for the logo icon in your system tray.</li>
+                      </ol>
+                      <a 
+                        href="https://ollama.com/download/windows" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="btn-download-action"
+                      >
+                        Download Ollama for Windows
+                      </a>
+                    </div>
+                  )}
+
+                  {selectedOS === 'macOS' && (
+                    <div className="instruction-pane">
+                      <ol className="step-list">
+                        <li>Download the official macOS app archive.</li>
+                        <li>Unzip the downloaded file and drag the <code>Ollama</code> app to your <strong>Applications</strong> directory.</li>
+                        <li>Run Ollama to complete configuration and open access points.</li>
+                      </ol>
+                      <a 
+                        href="https://ollama.com/download/mac" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="btn-download-action"
+                      >
+                        Download Ollama for macOS
+                      </a>
+                    </div>
+                  )}
+
+                  {selectedOS === 'Linux' && (
+                    <div className="instruction-pane">
+                      <ol className="step-list">
+                        <li>Open a terminal shell.</li>
+                        <li>Run the official installation script using the command below:</li>
+                      </ol>
+                      
+                      <div className="terminal-command-box">
+                        <code>curl -fsSL https://ollama.com/install.sh | sh</code>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText('curl -fsSL https://ollama.com/install.sh | sh');
+                            alert('Command copied to clipboard!');
+                          }} 
+                          className="btn-copy-command"
+                          title="Copy command to clipboard"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      
+                      <a 
+                        href="https://ollama.com/download/linux" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="btn-download-action secondary-style"
+                      >
+                        Visit Linux Instructions
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="install-modal-footer">
+              <span className="cors-note">
+                ⚠️ Note: Set environment variable <code>OLLAMA_ORIGINS="*"</code> to allow browser web apps to connect.
+              </span>
+              <button className="btn-close-modal" onClick={() => setShowInstallModal(false)}>Close Assistant</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
