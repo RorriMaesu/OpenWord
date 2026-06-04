@@ -2239,8 +2239,8 @@
 
 .copilot-input-field {
   flex-grow: 1;
-  height: 36px;
-  min-height: 36px;
+  height: 38px;
+  min-height: 38px;
   max-height: 120px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
@@ -2248,7 +2248,7 @@
   color: var(--text-main);
   padding: 8px 10px;
   outline: none;
-  font-size: 12px;
+  font-size: 14px;
   font-family: inherit;
   resize: none;
   line-height: 1.4;
@@ -3494,9 +3494,9 @@ mark {
     font-size: clamp(12px, 0.72rem + 0.9cqw, 22px);
   }
   .sidebar-container .copilot-input-field {
-    font-size: clamp(11px, 0.68rem + 0.8cqw, 20px);
-    height: clamp(36px, 2rem + 1.2cqw, 64px);
-    min-height: clamp(36px, 2rem + 1.2cqw, 64px);
+    font-size: clamp(14px, 0.82rem + 1.0cqw, 24px);
+    height: clamp(38px, 2.2rem + 1.2cqw, 72px);
+    min-height: clamp(38px, 2.2rem + 1.2cqw, 72px);
   }
   .sidebar-container .sidebar-tab {
     font-size: clamp(9.5px, 0.55rem + 0.6cqw, 16px);
