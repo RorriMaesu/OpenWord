@@ -57,6 +57,7 @@ export const Editor: React.FC<EditorProps> = ({
   const totalPagesRef = useRef(1);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
+  const lastTitleRef = useRef(docState.title);
 
   const extensions = useMemo(() => [
     StarterKit.configure({
@@ -225,16 +226,21 @@ export const Editor: React.FC<EditorProps> = ({
   useEffect(() => {
     if (editor && docState.content) {
       const currentJson = editor.getJSON();
+      const titleChanged = docState.title !== lastTitleRef.current;
+      lastTitleRef.current = docState.title;
+
       // Fast deep comparison using JSON stringify to check if structural content changed
       if (JSON.stringify(currentJson) !== JSON.stringify(docState.content)) {
-        const json = docState.content;
-        // If we just loaded an empty file or new template, populate it
-        if (json.type === 'doc') {
-          editor.commands.setContent(json, { emitUpdate: false });
+        // Only overwrite content if the editor is not focused, OR if a document swap occurred
+        if (!editor.isFocused || titleChanged) {
+          const json = docState.content;
+          if (json.type === 'doc') {
+            editor.commands.setContent(json, { emitUpdate: false });
+          }
         }
       }
     }
-  }, [docState.content, editor]);
+  }, [docState.content, docState.title, editor]);
 
   // Listen for Ctrl+S keyboard shortcut
   useEffect(() => {
