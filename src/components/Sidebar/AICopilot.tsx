@@ -14,7 +14,8 @@ import { detectHardware, detectOS } from '../../utils/hardware';
 import type { HardwareProfile, OSDetails } from '../../utils/hardware';
 import { 
   serializeEditorToBlocks, streamEditBlock, 
-  insertPlaceholderBlock, executeDeleteBlock 
+  insertPlaceholderBlock, executeDeleteBlock,
+  VirtualIndexMapper
 } from '../../utils/blocks';
 import type { DocumentBlock, BlockOperation } from '../../utils/blocks';
 import { CopilotDiffCard } from './CopilotDiffCard';
@@ -596,39 +597,23 @@ Response: Certainly, I will delete the outdated paragraph.
     };
 
     let activeInsertionIndex: number | null = null;
-    const changes: { type: 'insert' | 'delete'; originalIndex: number }[] = [];
-
-    const getShiftedIndex = (originalIndex: number): number => {
-      let shift = 0;
-      for (const change of changes) {
-        if (change.type === 'insert') {
-          if (originalIndex >= change.originalIndex) {
-            shift += 1;
-          }
-        } else if (change.type === 'delete') {
-          if (originalIndex > change.originalIndex) {
-            shift -= 1;
-          }
-        }
-      }
-      return originalIndex + shift;
-    };
+    const mapper = new VirtualIndexMapper(originalBlocks.length);
 
     const parser = new AgentStreamParser(
       (conversationalText) => {
         setStreamedResponse(conversationalText);
       },
       (event: ToolCallEvent) => {
+        const actualIndex = mapper.getActualIndex(event.index);
+
         if (directEdit) {
           if (!editor) return;
           try {
             if (event.type === 'insert') {
               if (activeInsertionIndex === null) {
-                const shiftedAfterIndex = getShiftedIndex(event.index);
-                const newIndex = insertPlaceholderBlock(editor, shiftedAfterIndex, event.blockType);
+                const newIndex = insertPlaceholderBlock(editor, actualIndex, event.blockType);
                 if (newIndex !== -1) {
                   activeInsertionIndex = newIndex;
-                  changes.push({ type: 'insert', originalIndex: event.index });
                 }
               }
 
@@ -637,15 +622,16 @@ Response: Certainly, I will delete the outdated paragraph.
               }
 
               if (event.isFinal) {
+                mapper.registerInsert(event.index);
                 activeInsertionIndex = null;
               }
             } else if (event.type === 'edit') {
-              const shiftedIndex = getShiftedIndex(event.index);
-              streamEditBlock(editor, shiftedIndex, event.content, event.isFinal);
+              streamEditBlock(editor, actualIndex, event.content, event.isFinal);
             } else if (event.type === 'delete') {
-              const shiftedIndex = getShiftedIndex(event.index);
-              executeDeleteBlock(editor, shiftedIndex);
-              changes.push({ type: 'delete', originalIndex: event.index });
+              executeDeleteBlock(editor, actualIndex);
+              if (event.isFinal) {
+                mapper.registerDelete(event.index);
+              }
             }
           } catch (err) {
             console.error('Failed to apply stream mutator action:', err);

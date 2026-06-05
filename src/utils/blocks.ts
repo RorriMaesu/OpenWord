@@ -16,6 +16,68 @@ export interface BlockOperation {
   html?: string; // Content html to insert or replace with
 }
 
+export class VirtualIndexMapper {
+  private map = new Map<number, number>();
+
+  constructor(originalCount: number) {
+    for (let i = 0; i < originalCount; i++) {
+      this.map.set(i, i);
+    }
+  }
+
+  public getActualIndex(virtualIndex: number): number {
+    const actual = this.map.get(virtualIndex);
+    if (actual === undefined) {
+      return virtualIndex;
+    }
+    return actual;
+  }
+
+  public registerInsert(afterVirtualIndex: number) {
+    const actualIndex = this.getActualIndex(afterVirtualIndex);
+    const entries = Array.from(this.map.entries()).sort((a, b) => b[0] - a[0]);
+
+    for (const [v, a] of entries) {
+      let nextV = v;
+      let nextA = a;
+
+      if (a > actualIndex) {
+        nextA = a + 1;
+      }
+      if (v > afterVirtualIndex) {
+        nextV = v + 1;
+        this.map.delete(v);
+      }
+
+      this.map.set(nextV, nextA);
+    }
+
+    this.map.set(afterVirtualIndex + 1, actualIndex + 1);
+  }
+
+  public registerDelete(virtualIndex: number) {
+    const actualIndex = this.getActualIndex(virtualIndex);
+    this.map.delete(virtualIndex);
+
+    const entries = Array.from(this.map.entries()).sort((a, b) => a[0] - b[0]);
+
+    for (const [v, a] of entries) {
+      let nextV = v;
+      let nextA = a;
+
+      if (a > actualIndex) {
+        nextA = a - 1;
+      }
+      if (v > virtualIndex) {
+        nextV = v - 1;
+        this.map.delete(v);
+      }
+
+      this.map.set(nextV, nextA);
+    }
+  }
+}
+
 /**
  * Serialize the Tiptap editor document into a list of top-level blocks.
  */
@@ -45,46 +107,34 @@ export function serializeEditorToBlocks(editor: Editor): DocumentBlock[] {
 }
 
 /**
- * Applies a list of block-level operations in a stable bottom-to-top order.
+ * Applies a list of block-level operations in sequential order using VirtualIndexMapper.
  */
 export function applyBlockOperations(editor: Editor, operations: BlockOperation[]) {
-  // 1. Get current document blocks with their original positions
-  const blocks = serializeEditorToBlocks(editor);
+  const mapper = new VirtualIndexMapper(serializeEditorToBlocks(editor).length);
 
-  // 2. Sort operations in descending order of block index.
-  // For the same index, 'insert' operations must run before 'edit' or 'delete'
-  // so that the insertion happens at the original end boundary before the block content is mutated.
-  const sortedOps = [...operations].sort((a, b) => {
-    if (b.index !== a.index) {
-      return b.index - a.index;
-    }
-    if (a.type === 'insert' && b.type !== 'insert') return -1;
-    if (b.type === 'insert' && a.type !== 'insert') return 1;
-    return 0;
-  });
+  for (const op of operations) {
+    const blocks = serializeEditorToBlocks(editor);
+    const actualIndex = mapper.getActualIndex(op.index);
 
-  // Apply operations sequentially inside a single transaction chain
-  const chain = editor.chain().focus();
-
-  for (const op of sortedOps) {
     if (op.type === 'insert' && op.index === -1 && op.html) {
-      chain.insertContentAt(0, op.html);
+      editor.chain().focus().insertContentAt(0, op.html).run();
+      mapper.registerInsert(-1);
       continue;
     }
 
-    const targetBlock = blocks.find(b => b.index === op.index);
+    const targetBlock = blocks.find(b => b.index === actualIndex);
     if (!targetBlock) continue;
 
     if (op.type === 'edit' && op.html) {
-      chain.insertContentAt({ from: targetBlock.start, to: targetBlock.end }, op.html);
+      editor.chain().focus().insertContentAt({ from: targetBlock.start, to: targetBlock.end }, op.html).run();
     } else if (op.type === 'delete') {
-      chain.deleteRange({ from: targetBlock.start, to: targetBlock.end });
+      editor.chain().focus().deleteRange({ from: targetBlock.start, to: targetBlock.end }).run();
+      mapper.registerDelete(op.index);
     } else if (op.type === 'insert' && op.html) {
-      chain.insertContentAt(targetBlock.end, op.html);
+      editor.chain().focus().insertContentAt(targetBlock.end, op.html).run();
+      mapper.registerInsert(op.index);
     }
   }
-
-  chain.run();
 }
 
 /**
