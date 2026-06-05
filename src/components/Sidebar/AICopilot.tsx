@@ -206,7 +206,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     setIsChecking(true);
     
     // Check if the control API is available
-    const controlUrl = await getControlApiUrl();
+    const controlUrl = await getControlApiUrl(true);
     setIsControlApiAvailable(!!controlUrl);
 
     const status = await checkOllamaStatus();

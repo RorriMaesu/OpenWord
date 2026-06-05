@@ -11,13 +11,22 @@ export interface OllamaOptions {
 const OLLAMA_HOST = 'http://localhost:11434';
 
 let cachedControlUrl: string | null = null;
+let hasCheckedControlUrl = false;
 
 /**
  * Dynamically check candidate endpoints for the Vite dev control server
  * to find where the local launcher bridge is listening.
  */
-export async function getControlApiUrl(): Promise<string | null> {
-  if (cachedControlUrl) return cachedControlUrl;
+export async function getControlApiUrl(forceCheck = false): Promise<string | null> {
+  if (forceCheck) {
+    cachedControlUrl = null;
+    hasCheckedControlUrl = false;
+  }
+
+  if (cachedControlUrl) return cachedControlUrl === 'none' ? null : cachedControlUrl;
+  if (hasCheckedControlUrl) return null;
+
+  hasCheckedControlUrl = true;
 
   const isLocal = typeof window !== 'undefined' && 
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -45,6 +54,7 @@ export async function getControlApiUrl(): Promise<string | null> {
     }
   }
 
+  cachedControlUrl = 'none';
   return null;
 }
 
