@@ -103,6 +103,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
     viewportHeight: number;
   } | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const [isTransitioningStep, setIsTransitioningStep] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -113,6 +114,12 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
 
   useEffect(() => {
     if (!isOpen || isMobile) return;
+
+    // Trigger transition state when step changes
+    setIsTransitioningStep(true);
+    const timer = setTimeout(() => {
+      setIsTransitioningStep(false);
+    }, 450);
 
     const step = TOUR_STEPS[currentStep];
     
@@ -217,6 +224,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
     window.addEventListener('scroll', updatePosition);
 
     return () => {
+      clearTimeout(timer);
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition);
@@ -367,7 +375,10 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
             top: `${coords.top - 4}px`,
             left: `${coords.left - 4}px`,
             width: `${coords.width + 8}px`,
-            height: `${coords.height + 8}px`
+            height: `${coords.height + 8}px`,
+            transition: isTransitioningStep
+              ? 'top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease'
+              : 'opacity 0.2s ease'
           }}
         />
       )}
