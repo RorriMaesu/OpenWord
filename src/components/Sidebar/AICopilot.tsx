@@ -487,8 +487,28 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     let blockContext = '';
     if (editor) {
       const currentBlocks = serializeEditorToBlocks(editor);
+      const { from, to } = editor.state.selection;
+      const hasSel = from !== to;
+
       blockContext = `[CURRENT DOCUMENT BLOCKS]:\n` + 
-        currentBlocks.map(b => `Block ${b.index} (${b.type}): "${b.text}"`).join('\n') + '\n\n';
+        currentBlocks.map(b => {
+          let annotatedText = b.text;
+          let selLabel = '';
+          if (hasSel && b.start < to && b.end > from) {
+            const textStart = b.start + 1;
+            const selStart = Math.max(0, from - textStart);
+            const selEnd = Math.min(b.text.length, to - textStart);
+            if (selStart < selEnd) {
+              annotatedText = b.text.slice(0, selStart) + 
+                '[HIGHLIGHT_START]' + 
+                b.text.slice(selStart, selEnd) + 
+                '[HIGHLIGHT_END]' + 
+                b.text.slice(selEnd);
+              selLabel = ' [CONTAINS_HIGHLIGHT]';
+            }
+          }
+          return `Block ${b.index} (${b.type})${selLabel}: "${annotatedText}"`;
+        }).join('\n') + '\n\n';
     }
 
     const activeModel = modelMode === 'webgpu' ? selectedWebgpuModel : selectedModel;
@@ -517,6 +537,7 @@ Rules:
 4. Output flow: You can write conversational explanations first, and then output the XML tags to perform the edits. Or you can output them in any order. The changes will type themselves out in the editor in real-time!
 5. IMPORTANT: Do not use standard markdown code blocks or json blocks for operations. Use ONLY the specified XML tags for document modification.
 6. CRITICAL REQUIREMENT: If the user asks you to rewrite, delete, insert, erase, clear, or modify text in the document, you MUST use the XML tags to carry out the changes. Do NOT output the new text solely in conversational form — you must wrap all document changes inside the appropriate XML tags so the document can be updated.
+7. HIGHLIGHTED TEXT INSTRUCTIONS: If the user has highlighted/selected text, it will be marked inside the blocks with [HIGHLIGHT_START] and [HIGHLIGHT_END]. You must locate the block marked with [CONTAINS_HIGHLIGHT] and use <edit_block index="N"> to rewrite that block, updating the highlighted section while keeping the surrounding un-highlighted text intact.
 
 ---
 EXAMPLES OF CORRECT ACTIONS:
@@ -779,6 +800,15 @@ Response: Certainly, I will delete the outdated paragraph.
     }
   };
 
+  const getSelectedText = () => {
+    if (!editor) return '';
+    return editor.state.doc.textBetween(
+      editor.state.selection.from,
+      editor.state.selection.to,
+      ' '
+    ).trim();
+  };
+
   // Preset prompts
   const applyPreset = (action: string) => {
     if (!editor) return;
@@ -795,19 +825,19 @@ Response: Certainly, I will delete the outdated paragraph.
         alert('Please highlight a block of text in your document first.');
         return;
       }
-      handleSendPrompt(`Please rewrite the highlighted text to make it sound more professional and clean, while maintaining its core message.`);
+      handleSendPrompt(`Please rewrite the highlighted text (marked with [HIGHLIGHT_START] and [HIGHLIGHT_END] inside the document blocks) to make it sound more professional and clean, while maintaining its core message.`);
     } else if (action === 'shorten') {
       if (!textSelection) {
         alert('Please highlight a block of text in your document first.');
         return;
       }
-      handleSendPrompt(`Summarize and condense the highlighted text to make it shorter and more punchy.`);
+      handleSendPrompt(`Summarize and condense the highlighted text (marked with [HIGHLIGHT_START] and [HIGHLIGHT_END] inside the document blocks) to make it shorter and more punchy.`);
     } else if (action === 'expand') {
       if (!textSelection) {
         alert('Please highlight a block of text in your document first.');
         return;
       }
-      handleSendPrompt(`Elaborate on the highlighted text, adding more details, context, and arguments in the same writing style.`);
+      handleSendPrompt(`Elaborate on the highlighted text (marked with [HIGHLIGHT_START] and [HIGHLIGHT_END] inside the document blocks), adding more details, context, and arguments in the same writing style.`);
     }
   };
 
@@ -1445,6 +1475,33 @@ Response: Certainly, I will delete the outdated paragraph.
           >
             <span>Expand</span>
           </button>
+        </div>
+      )}
+
+      {/* Selected Text Preview */}
+      {hasSelection && (
+        <div className="copilot-selected-text-preview">
+          <div className="preview-header">
+            <span className="preview-title">
+              <Sparkles size={10} style={{ marginRight: '4px', color: 'var(--accent-color, #0078d4)', display: 'inline-block', verticalAlign: 'middle' }} />
+              Active Selection
+            </span>
+            <button 
+              className="preview-close-btn"
+              onClick={() => {
+                if (editor) {
+                  const { to } = editor.state.selection;
+                  editor.chain().focus().setTextSelection(to).run();
+                }
+              }}
+              title="Clear selection"
+            >
+              <X size={10} />
+            </button>
+          </div>
+          <div className="preview-text">
+            "{getSelectedText()}"
+          </div>
         </div>
       )}
 

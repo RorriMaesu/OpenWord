@@ -2252,6 +2252,73 @@
   cursor: not-allowed;
 }
 
+/* Selected Text Preview */
+.copilot-selected-text-preview {
+  background: rgba(0, 120, 212, 0.04);
+  border-top: 1px dashed rgba(0, 120, 212, 0.2);
+  border-bottom: 1px dashed rgba(0, 120, 212, 0.2);
+  padding: 8px 12px;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.copilot-selected-text-preview .preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.copilot-selected-text-preview .preview-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #666);
+}
+
+.copilot-selected-text-preview .preview-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #666);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all var(--transition-fast, 0.15s);
+}
+
+.copilot-selected-text-preview .preview-close-btn:hover {
+  color: var(--text-main, #333);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.copilot-selected-text-preview .preview-text {
+  font-size: 11px;
+  color: var(--text-main, #333);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] .copilot-selected-text-preview {
+  background: rgba(0, 120, 212, 0.06);
+  border-color: rgba(0, 120, 212, 0.25);
+}
+
+[data-theme='dark'] .copilot-selected-text-preview .preview-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Input Area */
 .copilot-input-area {
   display: flex;
