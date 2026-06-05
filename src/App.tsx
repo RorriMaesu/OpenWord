@@ -6,7 +6,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { HeaderFooterManager } from './components/Editor/HeaderFooterManager';
 import { Editor as TiptapEditor } from '@tiptap/react';
-import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles } from 'lucide-react';
+import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles, ArrowLeft } from 'lucide-react';
 import { getDocument, deleteDocument } from './utils/db';
 import './App.css';
 import { TutorialTour } from './components/Tutorial/TutorialTour';
@@ -116,6 +116,27 @@ const AppContent: React.FC = () => {
       {isMobile ? (
         <div className="word-titlebar mobile-header no-print">
           <div className="titlebar-left">
+            {/* Gnosys Hub Back Button */}
+            <a 
+              href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8000/' : '../Gnosys-AI/'} 
+              className="titlebar-back-btn" 
+              title="Back to Gnosys Study Hub"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                borderRadius: '8px',
+                color: 'var(--text-muted)',
+                marginRight: '8px',
+                transition: 'background-color 0.2s',
+                textDecoration: 'none'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--border-color)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <ArrowLeft size={16} />
+            </a>
             <div className="app-brand-logo" onClick={createNewDocument} title="New Document">
               <svg viewBox="0 0 24 24" className="app-logo-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -193,6 +214,27 @@ const AppContent: React.FC = () => {
       ) : (
         <div className="word-titlebar no-print">
           <div className="titlebar-left">
+            {/* Gnosys Hub Back Button */}
+            <a 
+              href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8000/' : '../Gnosys-AI/'} 
+              className="titlebar-back-btn" 
+              title="Back to Gnosys Study Hub"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                borderRadius: '8px',
+                color: 'var(--text-muted)',
+                marginRight: '8px',
+                transition: 'background-color 0.2s',
+                textDecoration: 'none'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--border-color)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <ArrowLeft size={16} />
+            </a>
             {/* App Branding Logo */}
             <div className="app-brand-logo" title="OpenWord desktop application">
               <svg viewBox="0 0 24 24" className="app-logo-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
