@@ -158,6 +158,11 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
       const element = document.querySelector(step.target);
       if (element) {
         const rect = element.getBoundingClientRect();
+        // Skip frames where the element has not yet been laid out or has uncalculated dimensions/coordinates
+        if (rect.width === 0 || rect.height === 0 || (rect.left === 0 && rect.top === 0)) {
+          animationFrameId = requestAnimationFrame(updatePosition);
+          return;
+        }
         const currentCoords = {
           top: rect.top + window.scrollY,
           left: rect.left + window.scrollX,
