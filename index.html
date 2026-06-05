@@ -2,10 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/OpenWord/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>opensourceword</title>
-    <script type="module" crossorigin src="/OpenWord/assets/index-OuxCu7sK.js"></script>
+    <script>
+      (function() {
+        const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const scriptSrc = isDev ? 'http://localhost:8000/assets/js/pomodoro.js' : '../Gnosys-AI/assets/js/pomodoro.js';
+        const script = document.createElement('script');
+        script.src = scriptSrc;
+        script.defer = true;
+        document.head.appendChild(script);
+      })();
+    </script>
+    <script type="module" crossorigin src="/OpenWord/assets/index-DaySlczm.js"></script>
     <link rel="stylesheet" crossorigin href="/OpenWord/assets/index-6SEi6PjY.css">
   </head>
   <body>
