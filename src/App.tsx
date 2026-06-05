@@ -54,8 +54,16 @@ const AppContent: React.FC = () => {
     return (saved as any) || 'outline';
   });
 
+  // Force sidebar to be open during the onboarding tour
+  useEffect(() => {
+    if (isTourOpen) {
+      setShowSidebar(true);
+    }
+  }, [isTourOpen]);
+
   // Autosave Recovery dialog visibility
   const [showRecoveryAlert, setShowRecoveryAlert] = useState(false);
+
 
   // Sync theme from localStorage on startup
   useEffect(() => {

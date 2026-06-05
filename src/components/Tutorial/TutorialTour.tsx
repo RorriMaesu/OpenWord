@@ -123,8 +123,9 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
 
     const step = TOUR_STEPS[currentStep];
     
-    // Reset stable coordinates to null so it captures the new target's coordinates on first frame
+    // Reset stable coordinates and coords to null so it captures the new target's coordinates on first frame
     setStableTooltipCoords(null);
+    setCoords(null);
 
     // Dynamically adjust sidebar tab if the step requires it
     if (step.sidebarTab) {
@@ -159,7 +160,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ isOpen, onClose, set
       if (element) {
         const rect = element.getBoundingClientRect();
         // Skip frames where the element has not yet been laid out or has uncalculated dimensions/coordinates
-        if (rect.width === 0 || rect.height === 0 || (rect.left === 0 && rect.top === 0)) {
+        if (rect.width === 0 || rect.height === 0 || rect.left <= 0 || rect.top <= 0) {
           animationFrameId = requestAnimationFrame(updatePosition);
           return;
         }
