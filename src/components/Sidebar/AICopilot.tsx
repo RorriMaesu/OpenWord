@@ -1927,7 +1927,7 @@ Response: Certainly, I will delete the outdated paragraph.
                     <Info size={14} style={{ color: 'var(--word-blue)' }} /> Why does my mobile browser reload/crash?
                   </h4>
                   <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.45' }}>
-                    WebGPU models (Gemma 2B, Llama 1B) must load <strong>1.2 GB to 2.2 GB</strong> of weights into browser RAM. Phones generally restrict a single tab to <strong>512 MB - 1 GB</strong> of RAM, causing the operating system to force-reload the tab to prevent phone freezes.
+                    WebGPU models (Gemma 4 E2B, Llama 1B) must load <strong>1.2 GB to 2.8 GB</strong> of weights into browser RAM. Phones generally restrict a single tab to <strong>512 MB - 1 GB</strong> of RAM, causing the operating system to force-reload the tab to prevent phone freezes.
                   </p>
                 </div>
 

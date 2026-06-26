@@ -1,6 +1,6 @@
 /**
  * Extract a clean, friendly display name from a raw Ollama model name string.
- * E.g., 'gemma2:2b' -> 'Gemma 2'
+ * E.g., 'gemma4:e2b' -> 'Gemma 4 E2B'
  *       'llama3.1:latest' -> 'Llama 3.1'
  *       'qwen2.5-coder:7b' -> 'Qwen 2.5 Coder'
  */

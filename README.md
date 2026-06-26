@@ -47,7 +47,7 @@ Unlike standard cloud word processors, OpenWord is an **offline-first, zero-serv
     - **Direct Edit Mode (Real-Time):** Streams AI edits directly into the document editor in real-time using a cursor-stable block shifter.
     - **Proposal Mode (Visual Diff):** Streams changes to a sidebar visual diff card (rendered with green/red additions/deletions), allowing you to review edits and click **Accept & Apply** or **Reject** before mutating the document.
 *   **Robust XML Tool Actions:** Parses structural document actions (`<edit_block>`, `<insert_block>`, `<delete_block>`) dynamically, supporting arbitrary attribute order, spacing, and quote styles.
-*   **Hardware and OS Profiler:** Detects GPU VRAM and OS details at startup to recommend the most optimal model size (e.g., Gemma 2B for lighter GPUs).
+*   **Hardware and OS Profiler:** Detects GPU VRAM and OS details at startup to recommend the most optimal model size (e.g., Gemma 4 E2B for lighter GPUs).
 *   **Speculative MTP Decoding Toggle:** Activates speculative token predictions to accelerate output text stream speeds.
 
 ### 🔒 Client-Side Storage & IO
