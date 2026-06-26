@@ -57,7 +57,7 @@ export const Editor: React.FC<EditorProps> = ({
   const totalPagesRef = useRef(1);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
-  const lastTitleRef = useRef(docState.title);
+  const lastLoadedDocIdRef = useRef<string | null>(null);
 
   const extensions = useMemo(() => [
     StarterKit.configure({
@@ -222,25 +222,18 @@ export const Editor: React.FC<EditorProps> = ({
     }
   }, [editor, onEditorReady]);
 
-  // Synchronize Content if loaded from external file importer
+  // Synchronize Content when switching documents
   useEffect(() => {
     if (editor && docState.content) {
-      const currentJson = editor.getJSON();
-      const titleChanged = docState.title !== lastTitleRef.current;
-      lastTitleRef.current = docState.title;
-
-      // Fast deep comparison using JSON stringify to check if structural content changed
-      if (JSON.stringify(currentJson) !== JSON.stringify(docState.content)) {
-        // Only overwrite content if the editor is not focused, OR if a document swap occurred
-        if (!editor.isFocused || titleChanged) {
-          const json = docState.content;
-          if (json.type === 'doc') {
-            editor.commands.setContent(json, { emitUpdate: false });
-          }
+      if (docState.id !== lastLoadedDocIdRef.current) {
+        lastLoadedDocIdRef.current = docState.id;
+        const json = docState.content;
+        if (json.type === 'doc') {
+          editor.commands.setContent(json, { emitUpdate: false });
         }
       }
     }
-  }, [docState.content, docState.title, editor]);
+  }, [docState.id, docState.content, editor]);
 
   // Listen for Ctrl+S keyboard shortcut
   useEffect(() => {
