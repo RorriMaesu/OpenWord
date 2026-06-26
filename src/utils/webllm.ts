@@ -1,18 +1,21 @@
 import { CreateWebWorkerMLCEngine, prebuiltAppConfig } from '@mlc-ai/web-llm';
 import type { WebWorkerMLCEngine } from '@mlc-ai/web-llm';
+import { loadLiteRTGPUEngine, isLiteRTEngineLoaded, unloadLiteRTEngine, streamLiteRTChat, clearLiteRTCache } from './litert';
 
-let activeEngine: WebWorkerMLCEngine | null = null;
+let activeEngine: WebWorkerMLCEngine | any | null = null;
 let activeWorker: Worker | null = null;
 let activeModelId: string | null = null;
+let activeProvider: 'webllm' | 'litert' | null = null;
 
 export interface EdgeModel {
   model_id: string;
   name: string;
   size: string;
+  provider: 'webllm' | 'litert';
   customConfig?: {
     model: string;
-    model_id: string;
-    model_lib: string;
+    model_id?: string;
+    model_lib?: string;
     required_features?: string[];
   };
 }
@@ -31,35 +34,37 @@ export function checkWebGPUSupport(): boolean {
 export function getAvailableEdgeModels(): EdgeModel[] {
   const defaultModels: EdgeModel[] = [
     {
-      model_id: 'gemma-4-E2B-it-q4f16_1-MLC',
+      model_id: 'gemma-4-E2B-it-litert-lm',
       name: 'Gemma 4 E2B (Recommended)',
       size: '1.6 GB',
+      provider: 'litert',
       customConfig: {
-        model: 'https://huggingface.co/welcoma/gemma-4-E2B-it-q4f16_1-MLC',
-        model_id: 'gemma-4-E2B-it-q4f16_1-MLC',
-        model_lib: 'https://huggingface.co/welcoma/gemma-4-E2B-it-q4f16_1-MLC/resolve/main/libs/gemma-4-E2B-it-q4f16_1-MLC-webgpu.wasm',
-        required_features: ['shader-f16']
+        model: 'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.litertlm'
       }
     },
     {
       model_id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
       name: 'Llama 3.2 1B (Mobile Friendly)',
-      size: '1.2 GB'
+      size: '1.2 GB',
+      provider: 'webllm'
     },
     {
       model_id: 'gemma-2-2b-it-q4f16_1-MLC',
       name: 'Gemma 2 2B (Older Edge Model)',
-      size: '1.6 GB'
+      size: '1.6 GB',
+      provider: 'webllm'
     },
     {
       model_id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
       name: 'Qwen 2.5 1.5B (Fast & Clean)',
-      size: '1.4 GB'
+      size: '1.4 GB',
+      provider: 'webllm'
     },
     {
       model_id: 'Phi-3-mini-4k-instruct-q4f16_1-MLC',
       name: 'Phi 3 Mini (3.8B - Advanced)',
-      size: '2.2 GB'
+      size: '2.2 GB',
+      provider: 'webllm'
     }
   ];
 
@@ -115,7 +120,8 @@ export function getAvailableEdgeModels(): EdgeModel[] {
         return {
           model_id: item.model_id,
           name: cleanName,
-          size
+          size,
+          provider: 'webllm' as const
         };
       });
       
@@ -139,29 +145,25 @@ export async function loadWebGPUEngine(
   modelId: string,
   customConfig: any | null,
   onProgress: (text: string, value: number) => void
-): Promise<WebWorkerMLCEngine> {
-  if (activeEngine && activeModelId === modelId) {
+): Promise<any> {
+  if (activeModelId === modelId) {
     return activeEngine;
   }
 
-  if (activeEngine) {
-    try {
-      await activeEngine.unload();
-    } catch {
-      // Ignore unload errors
-    }
-    activeEngine = null;
+  // Unload any running engines first
+  await unloadWebGPUEngine();
+
+  const model = getAvailableEdgeModels().find(m => m.model_id === modelId);
+  if (model?.provider === 'litert') {
+    activeProvider = 'litert';
+    const modelUrl = customConfig?.model || model.customConfig?.model || '';
+    activeEngine = await loadLiteRTGPUEngine(modelId, modelUrl, onProgress);
+    activeModelId = modelId;
+    return activeEngine;
   }
 
-  if (activeWorker) {
-    try {
-      activeWorker.terminate();
-    } catch {
-      // Ignore worker termination errors
-    }
-    activeWorker = null;
-  }
-
+  // WebWorker MLC Engine initialization path
+  activeProvider = 'webllm';
   const engineConfig: any = {};
   if (customConfig) {
     engineConfig.appConfig = {
@@ -208,6 +210,10 @@ export async function loadWebGPUEngine(
  * Check if the engine is currently loaded for a model
  */
 export function isEngineLoaded(modelId: string): boolean {
+  const model = getAvailableEdgeModels().find(m => m.model_id === modelId);
+  if (model?.provider === 'litert') {
+    return isLiteRTEngineLoaded(modelId);
+  }
   return !!activeEngine && activeModelId === modelId;
 }
 
@@ -224,6 +230,10 @@ export async function streamWebGPUChat(
   if (!activeEngine) {
     onError(new Error('WebGPU Engine is not loaded. Please select and load a model.'));
     return () => {};
+  }
+
+  if (activeProvider === 'litert') {
+    return streamLiteRTChat(messages, onChunk, onDone, onError);
   }
 
   let isCancelled = false;
@@ -267,6 +277,14 @@ export async function streamWebGPUChat(
  * Unload the active WebGPU engine to release RAM and GPU memory.
  */
 export async function unloadWebGPUEngine(): Promise<void> {
+  // Unload LiteRT engine
+  try {
+    await unloadLiteRTEngine();
+  } catch (e) {
+    console.warn('Failed to unload LiteRT engine:', e);
+  }
+
+  // Unload WebWorker MLC engine
   if (activeEngine) {
     try {
       await activeEngine.unload();
@@ -284,6 +302,7 @@ export async function unloadWebGPUEngine(): Promise<void> {
     }
     activeWorker = null;
   }
+  activeProvider = null;
 }
 
 /**
@@ -294,8 +313,16 @@ export async function clearWebGPUCache(): Promise<{ success: boolean; freedCache
   
   // 1. Unload engine to free memory first
   await unloadWebGPUEngine();
+
+  // 2. Clear LiteRT Cache Storage
+  try {
+    const clearedLiteRT = await clearLiteRTCache();
+    freedCaches.push(...clearedLiteRT);
+  } catch (e) {
+    console.error('Error clearing LiteRT cache:', e);
+  }
   
-  // 2. Clear Cache Storage
+  // 3. Clear Cache Storage
   if (typeof window !== 'undefined' && 'caches' in window) {
     try {
       const keys = await window.caches.keys();
@@ -312,7 +339,7 @@ export async function clearWebGPUCache(): Promise<{ success: boolean; freedCache
     }
   }
   
-  // 3. Clear IndexedDB databases
+  // 4. Clear IndexedDB databases
   if (typeof window !== 'undefined' && window.indexedDB && window.indexedDB.databases) {
     try {
       const dbs = await window.indexedDB.databases();

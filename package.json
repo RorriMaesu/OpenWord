@@ -13,6 +13,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@litert-lm/core": "^0.13.1",
     "@mlc-ai/web-llm": "^0.2.84",
     "@tiptap/extension-color": "^3.25.0",
     "@tiptap/extension-font-family": "^3.25.0",

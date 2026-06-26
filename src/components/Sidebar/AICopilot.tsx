@@ -81,11 +81,11 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [webgpuModels, setWebgpuModels] = useState<EdgeModel[]>([]);
   const [selectedWebgpuModel, setSelectedWebgpuModel] = useState<string>(() => {
     const saved = localStorage.getItem('openword_copilot_webgpu_model');
-    if (!saved) return 'gemma-4-E2B-it-q4f16_1-MLC';
-    // Migrate any old Gemma 2, Gemma 1, or broken E4B model IDs to Gemma 4 E2B
+    if (!saved) return 'gemma-4-E2B-it-litert-lm';
+    // Migrate any old Gemma 2, Gemma 1, MLC Gemma 4, or broken E4B model IDs to LiteRT Gemma 4 E2B
     const lower = saved.toLowerCase();
-    if (lower.startsWith('gemma-2-') || lower.startsWith('gemma-2b') || lower.includes('gemma-4-e4b')) {
-      return 'gemma-4-E2B-it-q4f16_1-MLC';
+    if (lower.startsWith('gemma-2-') || lower.startsWith('gemma-2b') || lower.includes('gemma-4-e4b') || lower.includes('e2b-it-q4f16_1-mlc')) {
+      return 'gemma-4-E2B-it-litert-lm';
     }
     return saved;
   });
@@ -493,11 +493,13 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
       
       // Warn mobile users about high-memory model crash/reload loops
       if (isMobile && (targetModelId.toLowerCase().includes('gemma-4') || targetModelId.toLowerCase().includes('phi-3'))) {
+        const isLiteRT = targetModelId.toLowerCase().includes('litert');
         const proceed = window.confirm(
           "⚠️ High Memory Warning\n\n" +
-          "Gemma 4 E2B is highly resource-intensive and requires a phone with at least 8GB of RAM. " +
-          "Loading it in a mobile browser tab may crash/reload Chrome.\n\n" +
-          "For a stable mobile experience, we recommend using Llama 3.2 1B (Mobile Friendly).\n\n" +
+          (isLiteRT 
+            ? "Gemma 4 E2B runs on Google's optimized LiteRT engine, which is much more stable, but still resource-intensive.\n\n"
+            : "This model is highly resource-intensive and requires a phone with at least 8GB of RAM. Loading it in a browser tab may crash/reload Chrome.\n\n") +
+          "If your browser tab reloads or crashes, we recommend switching to Llama 3.2 1B (Mobile Friendly).\n\n" +
           "Do you want to proceed?"
         );
         if (!proceed) {
