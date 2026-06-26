@@ -1,7 +1,8 @@
-import { CreateMLCEngine, prebuiltAppConfig } from '@mlc-ai/web-llm';
-import type { MLCEngine } from '@mlc-ai/web-llm';
+import { CreateWebWorkerMLCEngine, prebuiltAppConfig } from '@mlc-ai/web-llm';
+import type { WebWorkerMLCEngine } from '@mlc-ai/web-llm';
 
-let activeEngine: MLCEngine | null = null;
+let activeEngine: WebWorkerMLCEngine | null = null;
+let activeWorker: Worker | null = null;
 let activeModelId: string | null = null;
 
 export interface EdgeModel {
@@ -138,7 +139,7 @@ export async function loadWebGPUEngine(
   modelId: string,
   customConfig: any | null,
   onProgress: (text: string, value: number) => void
-): Promise<MLCEngine> {
+): Promise<WebWorkerMLCEngine> {
   if (activeEngine && activeModelId === modelId) {
     return activeEngine;
   }
@@ -150,6 +151,15 @@ export async function loadWebGPUEngine(
       // Ignore unload errors
     }
     activeEngine = null;
+  }
+
+  if (activeWorker) {
+    try {
+      activeWorker.terminate();
+    } catch {
+      // Ignore worker termination errors
+    }
+    activeWorker = null;
   }
 
   const engineConfig: any = {};
@@ -172,12 +182,23 @@ export async function loadWebGPUEngine(
     chatOpts.sliding_window_size = 512;
   }
 
-  activeEngine = await CreateMLCEngine(modelId, {
-    initProgressCallback: (progress) => {
-      onProgress(progress.text, progress.progress || 0);
+  // Spawn the web worker
+  activeWorker = new Worker(
+    new URL('./webllm.worker.ts', import.meta.url),
+    { type: 'module' }
+  );
+
+  activeEngine = await CreateWebWorkerMLCEngine(
+    activeWorker,
+    modelId,
+    {
+      initProgressCallback: (progress) => {
+        onProgress(progress.text, progress.progress || 0);
+      },
+      ...engineConfig
     },
-    ...engineConfig
-  }, chatOpts);
+    chatOpts
+  );
   
   activeModelId = modelId;
   return activeEngine;
@@ -254,6 +275,14 @@ export async function unloadWebGPUEngine(): Promise<void> {
     }
     activeEngine = null;
     activeModelId = null;
+  }
+  if (activeWorker) {
+    try {
+      activeWorker.terminate();
+    } catch (e) {
+      console.warn('Failed to terminate Web Worker:', e);
+    }
+    activeWorker = null;
   }
 }
 
