@@ -4925,5 +4925,57 @@ mark {
   .mobile-drawer .diff-transition-indicator {
     padding: 8px 0;
   }
+
+  /* Layout Tab Styling */
+  .layout-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Header & Footer Action Button */
+  .sheet-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--brand-200);
+    background: var(--brand-50);
+    color: var(--brand-600);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .sheet-action-btn:active {
+    background: var(--brand-100);
+    border-color: var(--brand-300);
+  }
+
+  /* Recovery Alert Dialog Mobile Touch Target Adjustments */
+  .recovery-alert-card {
+    width: 90%;
+    max-width: 380px;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .recovery-alert-card .recovery-actions {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .recovery-alert-card .recovery-actions button {
+    width: 100%;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14.5px;
+  }
 }
 

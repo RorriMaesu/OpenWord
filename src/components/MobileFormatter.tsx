@@ -4,11 +4,13 @@ import {
   Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter,
   AlignRight, AlignJustify, List, ListOrdered, Undo, Redo,
   Table as TableIcon, Trash2, Plus, Minus, Link as LinkIcon,
-  X, ChevronUp, Image as ImageIcon
+  X, ChevronUp, Image as ImageIcon, FileText
 } from 'lucide-react';
+import { useDocument } from '../context/DocumentContext';
 
 interface MobileFormatterProps {
   editor: Editor | null;
+  onOpenHeaderFooter: () => void;
 }
 
 const TEXT_COLORS = [
@@ -37,12 +39,19 @@ const HIGHLIGHT_COLORS = [
   { name: 'None (Transparent)', value: 'transparent' }
 ];
 
-export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
+export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpenHeaderFooter }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileImageInputRef = useRef<HTMLInputElement>(null);
   const [isTableFocused, setIsTableFocused] = useState(false);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
-  const [activeSheetTab, setActiveSheetTab] = useState<'text' | 'paragraph' | 'insert'>('text');
+  const [activeSheetTab, setActiveSheetTab] = useState<'text' | 'paragraph' | 'layout' | 'insert'>('text');
+
+  const {
+    docState,
+    updateMargins,
+    updatePageSize,
+    updateOrientation
+  } = useDocument();
 
   useEffect(() => {
     if (!editor) return;
@@ -366,6 +375,12 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
                 Paragraph
               </button>
               <button 
+                className={`sheet-tab-btn ${activeSheetTab === 'layout' ? 'active' : ''}`}
+                onClick={() => setActiveSheetTab('layout')}
+              >
+                Layout
+              </button>
+              <button 
                 className={`sheet-tab-btn ${activeSheetTab === 'insert' ? 'active' : ''}`}
                 onClick={() => setActiveSheetTab('insert')}
               >
@@ -592,6 +607,114 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
                     accept="image/*"
                     onChange={handleImageUpload}
                   />
+                </div>
+              )}
+
+              {activeSheetTab === 'layout' && (
+                <div className="sheet-pane layout-pane">
+                  {/* Margins */}
+                  <div className="sheet-form-row-vertical">
+                    <label>Margins</label>
+                    <div className="segmented-control">
+                      <button
+                        onClick={() => updateMargins({ top: 96, bottom: 96, left: 96, right: 96 })}
+                        className={`segment-btn ${
+                          docState.margins.top === 96 &&
+                          docState.margins.bottom === 96 &&
+                          docState.margins.left === 96 &&
+                          docState.margins.right === 96
+                            ? 'active'
+                            : ''
+                        }`}
+                        style={{ flexGrow: 1 }}
+                      >
+                        Normal
+                      </button>
+                      <button
+                        onClick={() => updateMargins({ top: 48, bottom: 48, left: 48, right: 48 })}
+                        className={`segment-btn ${
+                          docState.margins.top === 48 &&
+                          docState.margins.bottom === 48 &&
+                          docState.margins.left === 48 &&
+                          docState.margins.right === 48
+                            ? 'active'
+                            : ''
+                        }`}
+                        style={{ flexGrow: 1 }}
+                      >
+                        Narrow
+                      </button>
+                      <button
+                        onClick={() => updateMargins({ top: 192, bottom: 192, left: 192, right: 192 })}
+                        className={`segment-btn ${
+                          docState.margins.top === 192 &&
+                          docState.margins.bottom === 192 &&
+                          docState.margins.left === 192 &&
+                          docState.margins.right === 192
+                            ? 'active'
+                            : ''
+                        }`}
+                        style={{ flexGrow: 1 }}
+                      >
+                        Wide
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Orientation */}
+                  <div className="sheet-form-row-vertical">
+                    <label>Orientation</label>
+                    <div className="segmented-control">
+                      <button
+                        onClick={() => updateOrientation('portrait')}
+                        className={`segment-btn ${docState.orientation === 'portrait' ? 'active' : ''}`}
+                        style={{ flexGrow: 1 }}
+                      >
+                        Portrait
+                      </button>
+                      <button
+                        onClick={() => updateOrientation('landscape')}
+                        className={`segment-btn ${docState.orientation === 'landscape' ? 'active' : ''}`}
+                        style={{ flexGrow: 1 }}
+                      >
+                        Landscape
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Page Size */}
+                  <div className="sheet-form-row-vertical">
+                    <label>Page Size</label>
+                    <div className="segmented-control">
+                      <button
+                        onClick={() => updatePageSize('Letter')}
+                        className={`segment-btn ${docState.pageSize === 'Letter' ? 'active' : ''}`}
+                        style={{ flexGrow: 1 }}
+                      >
+                        Letter
+                      </button>
+                      <button
+                        onClick={() => updatePageSize('A4')}
+                        className={`segment-btn ${docState.pageSize === 'A4' ? 'active' : ''}`}
+                        style={{ flexGrow: 1 }}
+                      >
+                        A4
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Header & Footer Action Button */}
+                  <button
+                    onClick={() => {
+                      setIsBottomSheetOpen(false); // Close drawer
+                      onOpenHeaderFooter(); // Open Header & Footer modal
+                    }}
+                    className="sheet-action-btn"
+                    style={{ marginTop: '16px', width: '100%' }}
+                  >
+                    <FileText size={16} />
+                    <span>Header & Footer Settings...</span>
+                  </button>
                 </div>
               )}
             </div>

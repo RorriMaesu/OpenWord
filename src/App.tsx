@@ -248,6 +248,7 @@ const AppContent: React.FC = () => {
                 else if (action === 'save') await saveActiveFile();
                 else if (action === 'saveas') await saveAsNewFile();
                 else if (action === 'print') window.print();
+                else if (action === 'headerfooter') setShowHeaderFooter(true);
                 e.target.value = ''; // Reset select element value
               }}
             >
@@ -257,6 +258,7 @@ const AppContent: React.FC = () => {
               <option value="save">Save</option>
               <option value="saveas">Save As...</option>
               <option value="print">Print / PDF</option>
+              <option value="headerfooter">Header & Footer Settings...</option>
             </select>
             <input
               type="file"
@@ -484,7 +486,10 @@ const AppContent: React.FC = () => {
 
       {/* Mobile Bottom Formatter Toolbar */}
       {isMobile && (
-        <MobileFormatter editor={editor} />
+        <MobileFormatter
+          editor={editor}
+          onOpenHeaderFooter={() => setShowHeaderFooter(true)}
+        />
       )}
 
       {/* 4. Glassmorphic Auto-Save Recovery Alert Dialog */}
