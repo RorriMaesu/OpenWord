@@ -5205,5 +5205,15 @@ mark {
   .warning-close-btn:active {
     background-color: rgba(0, 0, 0, 0.05);
   }
+
+  /* Collapsible WebGPU Warning overrides */
+  .webgpu-mobile-warning.collapsed {
+    padding: 8px 12px !important;
+    align-items: center !important;
+  }
+  .webgpu-mobile-warning.expanded {
+    padding: 12px !important;
+    align-items: flex-start !important;
+  }
 }
 

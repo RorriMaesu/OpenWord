@@ -94,6 +94,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [showMobileWarning, setShowMobileWarning] = useState<boolean>(() => {
     return localStorage.getItem('openword_copilot_hide_mobile_warning') !== 'true';
   });
+  const [warningCollapsed, setWarningCollapsed] = useState<boolean>(true);
   const [detectedOS, setDetectedOS] = useState<OSDetails | null>(null);
   const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
   const [selectedOS, setSelectedOS] = useState<'Windows' | 'macOS' | 'Linux'>('Windows');
@@ -1101,25 +1102,41 @@ Response: Certainly, I will delete the outdated paragraph.
 
       {/* Mobile WebGPU memory warning card */}
       {modelMode === 'webgpu' && isMobile && isWebGPUAvailable && showMobileWarning && (
-        <div className="copilot-connection-alert webgpu-mobile-warning">
-          <AlertCircle className="alert-icon" size={18} />
-          <div className="alert-body">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '4px' }}>
-              <h4 style={{ margin: 0 }}>Mobile Browser Warning</h4>
-              <button 
-                onClick={() => {
-                  setShowMobileWarning(false);
-                  localStorage.setItem('openword_copilot_hide_mobile_warning', 'true');
-                }} 
-                className="warning-close-btn"
-                title="Dismiss Warning"
-              >
-                <X size={14} />
-              </button>
+        <div className={`copilot-connection-alert webgpu-mobile-warning ${warningCollapsed ? 'collapsed' : 'expanded'}`}>
+          <AlertCircle className="alert-icon" size={18} style={{ marginTop: warningCollapsed ? '0' : '2px' }} />
+          <div className="alert-body" style={{ flexGrow: 1 }}>
+            <div 
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
+              onClick={() => setWarningCollapsed(!warningCollapsed)}
+            >
+              <h4 style={{ margin: 0, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                Mobile Browser Warning 
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'normal' }}>
+                  {warningCollapsed ? '(Tap to expand)' : '(Tap to collapse)'}
+                </span>
+              </h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {warningCollapsed ? '▼' : '▲'}
+                </span>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent toggling collapse state when dismissing
+                    setShowMobileWarning(false);
+                    localStorage.setItem('openword_copilot_hide_mobile_warning', 'true');
+                  }} 
+                  className="warning-close-btn"
+                  title="Dismiss Warning"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
-            <p>
-              Running local WebGPU engines inside mobile browsers is resource-intensive and may trigger memory-limit page crashes (tab reload). For a smooth co-writing experience on mobile devices, connect via remote Ollama endpoints or cloud models.
-            </p>
+            {!warningCollapsed && (
+              <p style={{ marginTop: '8px', fontSize: '12px', lineHeight: '1.45', margin: '8px 0 0 0' }}>
+                Running local WebGPU engines inside mobile browsers is resource-intensive and may trigger memory-limit page crashes (tab reload). For a smooth co-writing experience on mobile devices, connect via remote Ollama endpoints or cloud models.
+              </p>
+            )}
           </div>
         </div>
       )}
