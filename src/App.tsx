@@ -106,17 +106,21 @@ const AppContent: React.FC = () => {
       const vv = window.visualViewport;
       if (!vv) return;
       document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+      // Reset layout viewport scrolling position to ensure visual alignment and prevent cutting off headers
+      window.scrollTo(0, 0);
     };
 
     const vv = window.visualViewport;
     if (vv) {
       vv.addEventListener('resize', syncHeight);
+      vv.addEventListener('scroll', syncHeight);
       syncHeight();
     }
 
     return () => {
       if (vv) {
         vv.removeEventListener('resize', syncHeight);
+        vv.removeEventListener('scroll', syncHeight);
       }
       document.documentElement.style.removeProperty('--app-height');
     };

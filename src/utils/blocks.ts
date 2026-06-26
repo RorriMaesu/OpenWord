@@ -172,7 +172,7 @@ export function streamEditBlock(editor: Editor, index: number, html: string, isF
 
   const finalHtml = isFinal ? contentHtml : wrapInnerHtmlInMark(contentHtml);
 
-  editor.chain().focus().insertContentAt({ from: targetBlock.start, to: targetBlock.end }, finalHtml).run();
+  editor.chain().insertContentAt({ from: targetBlock.start, to: targetBlock.end }, finalHtml).run();
 }
 
 /**
@@ -184,7 +184,7 @@ export function insertPlaceholderBlock(editor: Editor, afterIndex: number, type 
   
   if (afterIndex === -1) {
     const content = type === 'heading' ? '<h1><mark>...</mark></h1>' : '<p><mark>...</mark></p>';
-    editor.chain().focus().insertContentAt(0, content).run();
+    editor.chain().insertContentAt(0, content).run();
     return 0;
   }
 
@@ -192,7 +192,7 @@ export function insertPlaceholderBlock(editor: Editor, afterIndex: number, type 
   if (!targetBlock) return -1;
 
   const content = type === 'heading' ? '<h1><mark>...</mark></h1>' : '<p><mark>...</mark></p>';
-  editor.chain().focus().insertContentAt(targetBlock.end, content).run();
+  editor.chain().insertContentAt(targetBlock.end, content).run();
   
   return afterIndex + 1;
 }
@@ -205,6 +205,6 @@ export function executeDeleteBlock(editor: Editor, index: number) {
   const targetBlock = blocks.find(b => b.index === index);
   if (!targetBlock) return;
 
-  editor.chain().focus().deleteRange({ from: targetBlock.start, to: targetBlock.end }).run();
+  editor.chain().deleteRange({ from: targetBlock.start, to: targetBlock.end }).run();
 }
 
