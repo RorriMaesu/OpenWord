@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDocument } from '../../context/DocumentContext';
-import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles, Coffee, X } from 'lucide-react';
+import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles, Coffee } from 'lucide-react';
 import { Editor } from '@tiptap/react';
 import { AICopilot } from './AICopilot';
 import { useIsMobile } from '../../utils/useIsMobile';
@@ -338,11 +338,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {activeTab === 'properties' && 'Document Properties'}
                 {activeTab === 'copilot' && 'AI Writing Assistant'}
               </span>
-              {onClose && (
-                <button className="mobile-sidebar-close-btn" onClick={onClose} title="Close Panel">
-                  <X size={18} />
-                </button>
-              )}
+
             </div>
           )}
         
