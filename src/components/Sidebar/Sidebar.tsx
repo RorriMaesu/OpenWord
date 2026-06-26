@@ -330,15 +330,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Tab Contents */}
         <div className={`sidebar-content ${activeTab === 'copilot' ? 'copilot-tab-active' : ''}`}>
-          {isMobile && (
+          {isMobile && activeTab !== 'outline' && (
             <div className="mobile-sidebar-header">
               <span className="mobile-sidebar-title">
-                {activeTab === 'outline' && 'Navigation Outline'}
                 {activeTab === 'search' && 'Find & Replace'}
                 {activeTab === 'properties' && 'Document Properties'}
                 {activeTab === 'copilot' && 'AI Writing Assistant'}
               </span>
-
             </div>
           )}
         
