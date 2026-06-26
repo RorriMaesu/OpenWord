@@ -180,8 +180,9 @@ export async function loadWebGPUEngine(
     // Crucial: reduce context window size on mobile to dramatically reduce KV cache allocation.
     // Default context window for Gemma 4 is often 4096 or 8192, which consumes 400MB-1GB of extra VRAM buffers.
     // Limiting it to 1024 prevents OOM crashes on memory-constrained mobile OS tabs.
+    // Note: We MUST set sliding_window_size to -1 if context_window_size is positive.
     chatOpts.context_window_size = 1024;
-    chatOpts.sliding_window_size = 512;
+    chatOpts.sliding_window_size = -1;
   }
 
   // Spawn the web worker

@@ -93,12 +93,17 @@ export async function loadLiteRTGPUEngine(
   const isMobile = typeof navigator !== 'undefined' && 
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  activeEngine = await Engine.create({
-    model: blob.stream(),
-    mainExecutorSettings: {
-      maxNumTokens: isMobile ? 1024 : 4096,
-    }
-  });
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    activeEngine = await Engine.create({
+      model: objectUrl,
+      mainExecutorSettings: {
+        maxNumTokens: isMobile ? 1024 : 4096,
+      }
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 
   activeModelId = modelId;
   activeConversation = await activeEngine.createConversation({
