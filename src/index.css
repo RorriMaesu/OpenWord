@@ -21,6 +21,18 @@ html, body {
   transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
+/* Prevent mobile browsers from scrolling the layout viewport when the virtual keyboard opens.
+   position: fixed on html/body stops browser-level document scrolling entirely.
+   Internal scrollable containers (editor, chat feed, sidebar) use their own overflow and are unaffected. */
+@media (max-width: 767px) {
+  html, body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
 #root {
   height: 100%;
   display: flex;

@@ -97,36 +97,28 @@ const AppContent: React.FC = () => {
     document.body.parentElement?.setAttribute('data-theme', savedTheme);
   }, []);
 
-  // Sync app height with visual viewport to prevent virtual keyboard from scrolling the header/menu off-screen
+  // Sync app-shell height with the visual viewport so the grid shrinks when the virtual keyboard opens.
+  // The position:fixed on body (index.css) prevents layout viewport scrolling; this hook handles height.
   useEffect(() => {
     if (!isMobile) return;
 
-    const handleViewportChange = () => {
+    const syncHeight = () => {
       const vv = window.visualViewport;
-      const appShell = document.querySelector('.app-shell') as HTMLElement;
-      if (vv && appShell) {
-        appShell.style.height = `${vv.height}px`;
-        // Scroll layout viewport back to top to keep header pinned at the top
-        window.scrollTo(0, 0);
-      }
+      if (!vv) return;
+      document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
     };
 
     const vv = window.visualViewport;
     if (vv) {
-      vv.addEventListener('resize', handleViewportChange);
-      vv.addEventListener('scroll', handleViewportChange);
-      handleViewportChange();
+      vv.addEventListener('resize', syncHeight);
+      syncHeight();
     }
 
     return () => {
       if (vv) {
-        vv.removeEventListener('resize', handleViewportChange);
-        vv.removeEventListener('scroll', handleViewportChange);
+        vv.removeEventListener('resize', syncHeight);
       }
-      const appShell = document.querySelector('.app-shell') as HTMLElement;
-      if (appShell) {
-        appShell.style.height = '';
-      }
+      document.documentElement.style.removeProperty('--app-height');
     };
   }, [isMobile]);
 

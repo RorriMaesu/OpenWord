@@ -4091,6 +4091,7 @@ mark {
   .app-shell {
     height: 100vh;
     height: 100dvh;
+    height: var(--app-height, 100dvh);
     grid-template-rows: 48px minmax(0, 1fr) auto;
   }
 
