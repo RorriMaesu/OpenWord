@@ -8,6 +8,12 @@ export interface EdgeModel {
   model_id: string;
   name: string;
   size: string;
+  customConfig?: {
+    model: string;
+    model_id: string;
+    model_lib: string;
+    required_features?: string[];
+  };
 }
 
 export function checkWebGPUSupport(): boolean {
@@ -19,6 +25,28 @@ export function checkWebGPUSupport(): boolean {
  */
 export function getAvailableEdgeModels(): EdgeModel[] {
   const defaultModels: EdgeModel[] = [
+    {
+      model_id: 'gemma-4-E2B-it-q4f16_1-MLC',
+      name: 'Gemma 4 E2B (Edge Multimodal)',
+      size: '1.6 GB',
+      customConfig: {
+        model: 'https://huggingface.co/welcoma/gemma-4-E2B-it-q4f16_1-MLC',
+        model_id: 'gemma-4-E2B-it-q4f16_1-MLC',
+        model_lib: 'https://huggingface.co/welcoma/gemma-4-E2B-it-q4f16_1-MLC/resolve/main/libs/gemma-4-E2B-it-q4f16_1-MLC-webgpu.wasm',
+        required_features: ['shader-f16']
+      }
+    },
+    {
+      model_id: 'gemma-4-E4B-it-q4f16_1-MLC',
+      name: 'Gemma 4 E4B (Edge Multimodal Advanced)',
+      size: '2.8 GB',
+      customConfig: {
+        model: 'https://huggingface.co/cnhktyom/gemma-4-E4B-it-q4f16_1-MLC',
+        model_id: 'gemma-4-E4B-it-q4f16_1-MLC',
+        model_lib: 'https://huggingface.co/cnhktyom/gemma-4-E4B-it-q4f16_1-MLC/resolve/main/libs/gemma-4-E4B-it-q4f16_1-MLC-webgpu.wasm',
+        required_features: ['shader-f16']
+      }
+    },
     {
       model_id: 'gemma-2-2b-it-q4f16_1-MLC',
       name: 'Gemma 2 2B (Recommended)',

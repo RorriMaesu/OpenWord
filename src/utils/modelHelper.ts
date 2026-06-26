@@ -7,6 +7,15 @@
 export function getFriendlyModelName(modelName: string): string {
   if (!modelName) return 'AI Copilot';
   
+  // Custom cleanup for WebGPU model IDs
+  const lowerName = modelName.toLowerCase();
+  if (lowerName.includes('gemma-4-e2b')) return 'Gemma 4 E2B';
+  if (lowerName.includes('gemma-4-e4b')) return 'Gemma 4 E4B';
+  if (lowerName.includes('gemma-2-2b')) return 'Gemma 2 2B';
+  if (lowerName.includes('llama-3.2-1b')) return 'Llama 3.2 1B';
+  if (lowerName.includes('qwen2.5-1.5b')) return 'Qwen 2.5 1.5B';
+  if (lowerName.includes('phi-3-mini')) return 'Phi 3 Mini';
+
   // 1. Strip the tag (everything after the colon)
   const baseName = modelName.split(':')[0];
   

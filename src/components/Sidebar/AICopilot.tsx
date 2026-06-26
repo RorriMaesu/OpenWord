@@ -474,6 +474,11 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
         model_id: 'custom-webgpu-model',
         model_lib: customWebgpuLib.trim()
       };
+    } else {
+      const selectedModelObj = webgpuModels.find(m => m.model_id === selectedWebgpuModel);
+      if (selectedModelObj && selectedModelObj.customConfig) {
+        customConfig = selectedModelObj.customConfig;
+      }
     }
 
     try {
