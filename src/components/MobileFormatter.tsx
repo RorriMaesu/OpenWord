@@ -315,8 +315,20 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
 
         {/* Expanded Formatting Sheet Trigger Button */}
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => setIsBottomSheetOpen(!isBottomSheetOpen))}
-          onTouchStart={(e) => preventFocusLoss(e, () => setIsBottomSheetOpen(!isBottomSheetOpen))}
+          onMouseDown={(e) => preventFocusLoss(e, () => {
+            const nextState = !isBottomSheetOpen;
+            setIsBottomSheetOpen(nextState);
+            if (nextState) {
+              (document.activeElement as HTMLElement)?.blur();
+            }
+          })}
+          onTouchStart={(e) => preventFocusLoss(e, () => {
+            const nextState = !isBottomSheetOpen;
+            setIsBottomSheetOpen(nextState);
+            if (nextState) {
+              (document.activeElement as HTMLElement)?.blur();
+            }
+          })}
           className={`mobile-tool-btn format-trigger-btn ${isBottomSheetOpen ? 'active' : ''}`}
           title="More Formatting Options"
           style={{ width: '48px', gap: '2px', backgroundColor: 'var(--brand-50)', borderColor: 'var(--brand-200)' }}

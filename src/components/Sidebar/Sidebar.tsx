@@ -198,6 +198,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (isMobile && onClose) {
+        onClose();
+      }
     }
   };
 

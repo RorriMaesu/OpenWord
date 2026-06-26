@@ -4285,6 +4285,19 @@ mark {
     transition: bottom 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     box-sizing: border-box;
   }
+  
+  /* Horizontal scroll discoverability gradient mask */
+  .mobile-formatter-container::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    height: 52px;
+    width: 32px;
+    background: linear-gradient(to right, transparent, var(--bg-ribbon));
+    pointer-events: none;
+    z-index: 5;
+  }
 
   .mobile-formatter-subrow {
     display: flex;
@@ -4368,6 +4381,7 @@ mark {
     -webkit-user-select: text;
     user-select: text;
     padding-bottom: 120px !important; /* spacing for formatting bar */
+    scroll-margin-bottom: 140px !important; /* typing cursor buffer spacing above toolbar */
   }
 
   /* WebGPU Warnings customization */
