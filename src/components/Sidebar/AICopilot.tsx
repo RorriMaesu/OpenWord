@@ -1111,19 +1111,19 @@ Response: Certainly, I will delete the outdated paragraph.
       {/* Mobile WebGPU memory warning card */}
       {modelMode === 'webgpu' && isMobile && isWebGPUAvailable && showMobileWarning && (
         <div className={`copilot-connection-alert webgpu-mobile-warning ${warningCollapsed ? 'collapsed' : 'expanded'}`}>
-          <AlertCircle className="alert-icon" size={warningCollapsed ? 14 : 18} style={{ marginTop: warningCollapsed ? '0' : '2px' }} />
-          <div className="alert-body" style={{ flexGrow: 1 }}>
+          <AlertCircle className="alert-icon" size={warningCollapsed ? 14 : 18} style={{ marginTop: warningCollapsed ? '0' : '2px', flexShrink: 0 }} />
+          <div className="alert-body" style={{ flexGrow: 1, minWidth: 0 }}>
             <div 
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer', minWidth: 0 }}
               onClick={handleToggleWarning}
             >
-              <h4 style={{ margin: 0, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <h4 style={{ margin: 0, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>
                 Mobile Browser Warning 
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'normal' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'normal', flexShrink: 0 }}>
                   {warningCollapsed ? '(Tap to expand)' : '(Tap to collapse)'}
                 </span>
               </h4>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   {warningCollapsed ? '▼' : '▲'}
                 </span>
@@ -1244,7 +1244,7 @@ Response: Certainly, I will delete the outdated paragraph.
       )}
 
       {/* Connection Troubleshooting card */}
-      {!isConnected && !isChecking && (
+      {modelMode === 'ollama' && !isConnected && !isChecking && (
         <div className="copilot-connection-alert">
           <AlertCircle className="alert-icon" size={18} />
           <div className="alert-body">
