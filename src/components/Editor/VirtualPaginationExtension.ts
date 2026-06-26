@@ -60,6 +60,9 @@ export const VirtualPaginationExtension = Extension.create<VirtualPaginationOpti
             const workspaceContainer = document.querySelector('.editor-workspace-container');
             const isPageless = workspaceContainer ? workspaceContainer.classList.contains('pageless-mode') : true;
             if (isPageless) {
+              if (lastHeightHash === 'pageless') return;
+              lastHeightHash = 'pageless';
+
               const decorationSet = DecorationSet.empty;
               editorView.dispatch(editorView.state.tr.setMeta(VirtualPaginationKey, decorationSet));
               document.dispatchEvent(new CustomEvent('openword-pagination-update', {
