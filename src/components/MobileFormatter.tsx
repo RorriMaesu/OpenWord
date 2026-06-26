@@ -4,13 +4,15 @@ import {
   Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter,
   AlignRight, AlignJustify, List, ListOrdered, Undo, Redo,
   Table as TableIcon, Trash2, Plus, Minus, Link as LinkIcon,
-  X, ChevronUp, Image as ImageIcon, FileText
+  X, ChevronUp, Image as ImageIcon, FileText, Sparkles
 } from 'lucide-react';
 import { useDocument } from '../context/DocumentContext';
 
 interface MobileFormatterProps {
   editor: Editor | null;
   onOpenHeaderFooter: () => void;
+  onToggleCopilot?: () => void;
+  isCopilotActive?: boolean;
 }
 
 const TEXT_COLORS = [
@@ -39,7 +41,7 @@ const HIGHLIGHT_COLORS = [
   { name: 'None (Transparent)', value: 'transparent' }
 ];
 
-export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpenHeaderFooter }) => {
+export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpenHeaderFooter, onToggleCopilot, isCopilotActive }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileImageInputRef = useRef<HTMLInputElement>(null);
   const [isTableFocused, setIsTableFocused] = useState(false);
@@ -264,6 +266,21 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
       {/* 2. Core Formatting Toolbar Row */}
       <div className="mobile-formatter-mainrow">
+        {/* AI Copilot Toggle */}
+        {onToggleCopilot && (
+          <>
+            <button
+              onMouseDown={(e) => preventFocusLoss(e, onToggleCopilot)}
+              onTouchStart={(e) => preventFocusLoss(e, onToggleCopilot)}
+              className={`mobile-tool-btn mobile-ai-toggle-btn ${isCopilotActive ? 'active' : ''}`}
+              title="AI Assistant"
+            >
+              <Sparkles size={16} />
+            </button>
+            <span className="mobile-tool-divider" />
+          </>
+        )}
+
         {/* Undo/Redo */}
         <button
           onMouseDown={(e) => preventFocusLoss(e, () => editor.chain().focus().undo().run())}

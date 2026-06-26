@@ -5637,6 +5637,31 @@ mark {
   font-weight: 500;
 }
 
+/* Mobile AI Formatter Toggle Button styling */
+.mobile-tool-btn.mobile-ai-toggle-btn {
+  background: linear-gradient(135deg, #f5f3ff 0%, #fae8ff 100%);
+  border-color: #d8b4fe;
+  color: var(--brand-600);
+  box-shadow: 0 1px 3px rgba(168, 85, 247, 0.1);
+}
+.mobile-tool-btn.mobile-ai-toggle-btn:active,
+.mobile-tool-btn.mobile-ai-toggle-btn.active {
+  background: var(--brand-100) !important;
+  border-color: var(--brand-300) !important;
+  color: var(--brand-700) !important;
+}
+[data-theme='dark'] .mobile-tool-btn.mobile-ai-toggle-btn {
+  background: linear-gradient(135deg, #2e1065 0%, #3b0764 100%);
+  border-color: #6b21a8;
+  color: #e9d5ff;
+}
+[data-theme='dark'] .mobile-tool-btn.mobile-ai-toggle-btn:active,
+[data-theme='dark'] .mobile-tool-btn.mobile-ai-toggle-btn.active {
+  background: #581c87 !important;
+  border-color: #7e22ce !important;
+  color: #f3e8ff !important;
+}
+
 
 
 

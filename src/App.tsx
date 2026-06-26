@@ -546,6 +546,15 @@ const AppContent: React.FC = () => {
         <MobileFormatter
           editor={editor}
           onOpenHeaderFooter={() => setShowHeaderFooter(true)}
+          onToggleCopilot={() => {
+            if (showSidebar && sidebarTab === 'copilot') {
+              setShowSidebar(false);
+            } else {
+              setSidebarTab('copilot');
+              setShowSidebar(true);
+            }
+          }}
+          isCopilotActive={showSidebar && sidebarTab === 'copilot'}
         />
       )}
 
