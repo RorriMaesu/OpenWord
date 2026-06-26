@@ -27,7 +27,7 @@ export function getAvailableEdgeModels(): EdgeModel[] {
   const defaultModels: EdgeModel[] = [
     {
       model_id: 'gemma-4-E2B-it-q4f16_1-MLC',
-      name: 'Gemma 4 E2B (Edge Multimodal)',
+      name: 'Gemma 4 E2B (Recommended)',
       size: '1.6 GB',
       customConfig: {
         model: 'https://huggingface.co/welcoma/gemma-4-E2B-it-q4f16_1-MLC',
@@ -49,7 +49,7 @@ export function getAvailableEdgeModels(): EdgeModel[] {
     },
     {
       model_id: 'gemma-2-2b-it-q4f16_1-MLC',
-      name: 'Gemma 2 2B (Recommended)',
+      name: 'Gemma 2 2B (Older Edge Model)',
       size: '1.6 GB'
     },
     {
