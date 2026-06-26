@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DocumentProvider, useDocument } from './context/DocumentContext';
 import { Ribbon } from './components/Ribbon/Ribbon';
 import { Editor } from './components/Editor/Editor';
@@ -6,7 +6,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { HeaderFooterManager } from './components/Editor/HeaderFooterManager';
 import { Editor as TiptapEditor } from '@tiptap/react';
-import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles, ArrowLeft, Check, Compass, RefreshCw } from 'lucide-react';
 import { getDocument, deleteDocument } from './utils/db';
 import './App.css';
 import { TutorialTour } from './components/Tutorial/TutorialTour';
@@ -23,7 +23,10 @@ const AppContent: React.FC = () => {
     autoSaveEnabled,
     setAutoSaveEnabled,
     createNewDocument,
-    saveAsNewFile
+    saveAsNewFile,
+    openLocalFile,
+    isSaving,
+    isDirty
   } = useDocument();
   
   // Editor instance reference
@@ -53,6 +56,9 @@ const AppContent: React.FC = () => {
     const saved = localStorage.getItem('openword_sidebar_tab');
     return (saved as any) || 'outline';
   });
+
+  // File input ref for mobile import
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Force sidebar to be open during the onboarding tour
   useEffect(() => {
@@ -115,6 +121,80 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    
+    try {
+      if (extension === 'docx') {
+        const { importDocx } = await import('./utils/docxImporter');
+        const buffer = await file.arrayBuffer();
+        const res = await importDocx(buffer);
+        
+        openLocalFile({
+          name: file.name,
+          html: res.html,
+          margins: res.margins,
+          pageSize: res.pageSize,
+          orientation: res.orientation,
+          headers: res.headers,
+          footers: docState.footers
+        });
+        
+        editor?.commands.setContent(res.html);
+      } else if (extension === 'md' || extension === 'markdown') {
+        const { markdownToHtml } = await import('./utils/markdownConverter');
+        const text = await file.text();
+        const html = markdownToHtml(text);
+        
+        openLocalFile({
+          name: file.name,
+          html,
+          margins: { top: 96, bottom: 96, left: 96, right: 96 },
+          pageSize: 'Letter',
+          orientation: 'portrait',
+          headers: { default: '', differentFirstPage: false },
+          footers: { default: '', differentFirstPage: false }
+        });
+        
+        editor?.commands.setContent(html);
+      } else if (extension === 'txt') {
+        const text = await file.text();
+        const html = text.split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br/>')}</p>`).join('');
+        
+        openLocalFile({
+          name: file.name,
+          html,
+          margins: { top: 96, bottom: 96, left: 96, right: 96 },
+          pageSize: 'Letter',
+          orientation: 'portrait',
+          headers: { default: '', differentFirstPage: false },
+          footers: { default: '', differentFirstPage: false }
+        });
+        
+        editor?.commands.setContent(html);
+      } else if (extension === 'html' || extension === 'htm') {
+        const html = await file.text();
+        
+        openLocalFile({
+          name: file.name,
+          html,
+          margins: { top: 96, bottom: 96, left: 96, right: 96 },
+          pageSize: 'Letter',
+          orientation: 'portrait',
+          headers: { default: '', differentFirstPage: false },
+          footers: { default: '', differentFirstPage: false }
+        });
+        
+        editor?.commands.setContent(html);
+      }
+    } catch (err) {
+      console.error('Failed to import file on mobile:', err);
+    }
+  };
+
   const triggerUndo = () => editor?.commands.undo();
   const triggerRedo = () => editor?.commands.redo();
 
@@ -164,6 +244,7 @@ const AppContent: React.FC = () => {
               onChange={async (e) => {
                 const action = e.target.value;
                 if (action === 'new') createNewDocument();
+                else if (action === 'open') fileInputRef.current?.click();
                 else if (action === 'save') await saveActiveFile();
                 else if (action === 'saveas') await saveAsNewFile();
                 else if (action === 'print') window.print();
@@ -172,20 +253,39 @@ const AppContent: React.FC = () => {
             >
               <option value="" disabled hidden>File</option>
               <option value="new">New Doc</option>
+              <option value="open">Import File...</option>
               <option value="save">Save</option>
               <option value="saveas">Save As...</option>
               <option value="print">Print / PDF</option>
             </select>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept=".docx,.md,.markdown,.txt,.html,.htm"
+              onChange={handleImportFile}
+            />
           </div>
 
           <div className="titlebar-center">
-            <input
-              type="text"
-              className="titlebar-filename-input"
-              value={docState.title}
-              onChange={(e) => updateTitle(e.target.value)}
-              placeholder="Untitled Document"
-            />
+            <div className="mobile-title-container">
+              <input
+                type="text"
+                className="titlebar-filename-input"
+                value={docState.title}
+                onChange={(e) => updateTitle(e.target.value)}
+                placeholder="Untitled Document"
+              />
+              <div className={`mobile-cloud-status ${isSaving ? 'saving' : ''}`} title={isSaving ? 'Autosaving...' : isDirty ? 'Unsaved edits' : 'Saved to device'}>
+                {isSaving ? (
+                  <RefreshCw size={12} className="spin-icon" />
+                ) : isDirty ? (
+                  <CloudOff size={12} className="cloud-dirty" />
+                ) : (
+                  <Check size={12} className="cloud-clean" />
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="titlebar-right">
@@ -215,7 +315,7 @@ const AppContent: React.FC = () => {
               className={`titlebar-icon-btn ${showSidebar && sidebarTab === 'outline' ? 'active' : ''}`}
               title="Document Outline"
             >
-              <Search size={16} />
+              <Compass size={16} />
             </button>
           </div>
         </div>

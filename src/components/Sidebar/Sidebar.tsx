@@ -225,65 +225,74 @@ export const Sidebar: React.FC<SidebarProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div 
-      className={`sidebar-container ${isMobile ? 'mobile-drawer' : ''}`}
-      style={isMobile ? {} : { width: `${width}px` }}
-    >
-      {/* Draggable Resizer Handle - Hidden on Mobile */}
-      {!isMobile && (
-        <div 
-          className={`sidebar-resizer-handle ${isResizing ? 'active' : ''}`}
-          onMouseDown={startResizing}
-        />
+    <>
+      {isMobile && (
+        <div className="mobile-sidebar-backdrop" onClick={onClose} />
       )}
-      {/* Sidebar Tabs Selector */}
-      <div className="sidebar-tabs">
-        <button 
-          className={`sidebar-tab ${activeTab === 'outline' ? 'active' : ''}`}
-          onClick={() => setActiveTab('outline')}
-          title="Document Outline"
-        >
-          <Compass size={18} />
-          <span>Outline</span>
-        </button>
-        <button 
-          className={`sidebar-tab ${activeTab === 'search' ? 'active' : ''}`}
-          onClick={() => setActiveTab('search')}
-          title="Find & Replace"
-        >
-          <Search size={18} />
-          <span>Find</span>
-        </button>
-        <button 
-          className={`sidebar-tab ${activeTab === 'properties' ? 'active' : ''}`}
-          onClick={() => setActiveTab('properties')}
-          title="Document Properties"
-        >
-          <Info size={18} />
-          <span>Info</span>
-        </button>
-        <button 
-          className={`sidebar-tab ${activeTab === 'copilot' ? 'active' : ''}`}
-          onClick={() => setActiveTab('copilot')}
-          title="OpenWord AI Assistant"
-        >
-          <Sparkles size={18} />
-          <span>OpenWord AI</span>
-        </button>
-        {isMobile && onClose && (
-          <button 
-            className="sidebar-tab sidebar-close-btn"
-            onClick={onClose}
-            title="Close Sidebar Panel"
-          >
-            <X size={18} className="text-danger" />
-            <span>Close</span>
-          </button>
+      <div 
+        className={`sidebar-container ${isMobile ? 'mobile-drawer' : ''}`}
+        style={isMobile ? {} : { width: `${width}px` }}
+      >
+        {/* Draggable Resizer Handle - Hidden on Mobile */}
+        {!isMobile && (
+          <div 
+            className={`sidebar-resizer-handle ${isResizing ? 'active' : ''}`}
+            onMouseDown={startResizing}
+          />
         )}
-      </div>
+        {/* Sidebar Tabs Selector */}
+        <div className="sidebar-tabs">
+          <button 
+            className={`sidebar-tab ${activeTab === 'outline' ? 'active' : ''}`}
+            onClick={() => setActiveTab('outline')}
+            title="Document Outline"
+          >
+            <Compass size={18} />
+            <span>Outline</span>
+          </button>
+          <button 
+            className={`sidebar-tab ${activeTab === 'search' ? 'active' : ''}`}
+            onClick={() => setActiveTab('search')}
+            title="Find & Replace"
+          >
+            <Search size={18} />
+            <span>Find</span>
+          </button>
+          <button 
+            className={`sidebar-tab ${activeTab === 'properties' ? 'active' : ''}`}
+            onClick={() => setActiveTab('properties')}
+            title="Document Properties"
+          >
+            <Info size={18} />
+            <span>Info</span>
+          </button>
+          <button 
+            className={`sidebar-tab ${activeTab === 'copilot' ? 'active' : ''}`}
+            onClick={() => setActiveTab('copilot')}
+            title="OpenWord AI Assistant"
+          >
+            <Sparkles size={18} />
+            <span>OpenWord AI</span>
+          </button>
+        </div>
 
-      {/* Tab Contents */}
-      <div className={`sidebar-content ${activeTab === 'copilot' ? 'copilot-tab-active' : ''}`}>
+        {/* Tab Contents */}
+        <div className={`sidebar-content ${activeTab === 'copilot' ? 'copilot-tab-active' : ''}`}>
+          {isMobile && (
+            <div className="mobile-sidebar-header">
+              <span className="mobile-sidebar-title">
+                {activeTab === 'outline' && 'Navigation Outline'}
+                {activeTab === 'search' && 'Find & Replace'}
+                {activeTab === 'properties' && 'Document Properties'}
+                {activeTab === 'copilot' && 'AI Writing Assistant'}
+              </span>
+              {onClose && (
+                <button className="mobile-sidebar-close-btn" onClick={onClose} title="Close Panel">
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+          )}
         
         {/* Navigation / Outline Tab */}
         {activeTab === 'outline' && (
@@ -469,5 +478,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       </div>
     </div>
+    </>
   );
 };

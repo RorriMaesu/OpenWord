@@ -3,16 +3,46 @@ import { Editor } from '@tiptap/react';
 import {
   Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter,
   AlignRight, AlignJustify, List, ListOrdered, Undo, Redo,
-  Table as TableIcon, Trash2, Plus, Minus, Type, Link as LinkIcon
+  Table as TableIcon, Trash2, Plus, Minus, Link as LinkIcon,
+  X, ChevronUp, Image as ImageIcon
 } from 'lucide-react';
 
 interface MobileFormatterProps {
   editor: Editor | null;
 }
 
+const TEXT_COLORS = [
+  { name: 'Black', value: '#000000' },
+  { name: 'Charcoal', value: '#333333' },
+  { name: 'Gray', value: '#595959' },
+  { name: 'Red', value: '#d13438' },
+  { name: 'Orange', value: '#d83b01' },
+  { name: 'Green', value: '#107c41' },
+  { name: 'Blue', value: '#0078d4' },
+  { name: 'Purple', value: '#b4009e' },
+  { name: 'Navy', value: '#002060' },
+  { name: 'Wine', value: '#a4262c' }
+];
+
+const HIGHLIGHT_COLORS = [
+  { name: 'Yellow', value: '#ffff00' },
+  { name: 'Bright Green', value: '#00ff00' },
+  { name: 'Cyan', value: '#00ffff' },
+  { name: 'Magenta', value: '#ff00ff' },
+  { name: 'Pink', value: '#ffc0cb' },
+  { name: 'Light Orange', value: '#ffebcc' },
+  { name: 'Light Blue', value: '#d2e9f9' },
+  { name: 'Light Green', value: '#e2f0d9' },
+  { name: 'Light Gray', value: '#e2e2e2' },
+  { name: 'None (Transparent)', value: 'transparent' }
+];
+
 export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileImageInputRef = useRef<HTMLInputElement>(null);
   const [isTableFocused, setIsTableFocused] = useState(false);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [activeSheetTab, setActiveSheetTab] = useState<'text' | 'paragraph' | 'insert'>('text');
 
   useEffect(() => {
     if (!editor) return;
@@ -60,11 +90,11 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
     action();
   };
 
-  const setHeadingStyle = (level: 1 | 2 | 'paragraph') => {
+  const setHeadingStyle = (level: 1 | 2 | 3 | 'paragraph') => {
     if (level === 'paragraph') {
       editor.chain().focus().setParagraph().setFontSize('16px').run();
     } else {
-      editor.chain().focus().setHeading({ level }).setFontSize(level === 1 ? '24px' : '18px').run();
+      editor.chain().focus().setHeading({ level }).setFontSize(level === 1 ? '24px' : level === 2 ? '18px' : '14px').run();
     }
   };
 
@@ -72,6 +102,54 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
     const url = prompt('Enter Hyperlink URL:', 'https://');
     if (url) {
       editor.chain().focus().setLink({ href: url }).run();
+    }
+  };
+
+  const getActiveFontSize = () => {
+    const attrs = editor.getAttributes('textStyle');
+    if (attrs && attrs.fontSize) {
+      const parsed = parseInt(attrs.fontSize, 10);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return 16; // default size
+  };
+
+  const handleFontSizeChange = (amount: number) => {
+    const current = getActiveFontSize();
+    const nextSize = Math.max(8, Math.min(72, current + amount));
+    editor.chain().focus().setFontSize(`${nextSize}px`).run();
+  };
+
+  const handleFontChange = async (fontName: string) => {
+    if (['Inter', 'Lora', 'Fira Code', 'Playfair Display', 'Roboto', 'Outfit'].includes(fontName)) {
+      try {
+        const fontId = `gfont-${fontName.toLowerCase().replace(/\s+/g, '-')}`;
+        if (!document.getElementById(fontId)) {
+          const link = document.createElement('link');
+          link.id = fontId;
+          link.rel = 'stylesheet';
+          link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, '+')}:wght@300;400;500;600;700&display=swap`;
+          document.head.appendChild(link);
+          await document.fonts.load(`1em ${fontName}`);
+        }
+      } catch (err) {
+        console.error('Failed to load Google Font asynchronously on mobile:', err);
+      }
+    }
+    editor.chain().focus().setFontFamily(fontName).run();
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          editor.chain().focus().setImage({ src: reader.result }).run();
+          setIsBottomSheetOpen(false); // Close drawer after insertion
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -193,31 +271,6 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
 
         <span className="mobile-tool-divider" />
 
-        {/* Headings */}
-        <button
-          onMouseDown={(e) => preventFocusLoss(e, () => setHeadingStyle('paragraph'))}
-          onTouchStart={(e) => preventFocusLoss(e, () => setHeadingStyle('paragraph'))}
-          className={`mobile-tool-btn ${editor.isActive('paragraph') ? 'active' : ''}`}
-        >
-          <Type size={16} />
-        </button>
-        <button
-          onMouseDown={(e) => preventFocusLoss(e, () => setHeadingStyle(1))}
-          onTouchStart={(e) => preventFocusLoss(e, () => setHeadingStyle(1))}
-          className={`mobile-tool-btn ${editor.isActive('heading', { level: 1 }) ? 'active' : ''}`}
-        >
-          <span style={{ fontWeight: 'bold', fontSize: '11px' }}>H1</span>
-        </button>
-        <button
-          onMouseDown={(e) => preventFocusLoss(e, () => setHeadingStyle(2))}
-          onTouchStart={(e) => preventFocusLoss(e, () => setHeadingStyle(2))}
-          className={`mobile-tool-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`}
-        >
-          <span style={{ fontWeight: 'bold', fontSize: '11px' }}>H2</span>
-        </button>
-
-        <span className="mobile-tool-divider" />
-
         {/* Alignments */}
         <button
           onMouseDown={(e) => preventFocusLoss(e, () => editor.chain().focus().setTextAlign('left').run())}
@@ -232,20 +285,6 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
           className={`mobile-tool-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
         >
           <AlignCenter size={16} />
-        </button>
-        <button
-          onMouseDown={(e) => preventFocusLoss(e, () => editor.chain().focus().setTextAlign('right').run())}
-          onTouchStart={(e) => preventFocusLoss(e, () => editor.chain().focus().setTextAlign('right').run())}
-          className={`mobile-tool-btn ${editor.isActive({ textAlign: 'right' }) ? 'active' : ''}`}
-        >
-          <AlignRight size={16} />
-        </button>
-        <button
-          onMouseDown={(e) => preventFocusLoss(e, () => editor.chain().focus().setTextAlign('justify').run())}
-          onTouchStart={(e) => preventFocusLoss(e, () => editor.chain().focus().setTextAlign('justify').run())}
-          className={`mobile-tool-btn ${editor.isActive({ textAlign: 'justify' }) ? 'active' : ''}`}
-        >
-          <AlignJustify size={16} />
         </button>
 
         <span className="mobile-tool-divider" />
@@ -268,24 +307,276 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
 
         <span className="mobile-tool-divider" />
 
-        {/* Insert Elements */}
+        {/* Expanded Formatting Sheet Trigger Button */}
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run())}
-          onTouchStart={(e) => preventFocusLoss(e, () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run())}
-          className="mobile-tool-btn"
-          title="Insert Table"
+          onMouseDown={(e) => preventFocusLoss(e, () => setIsBottomSheetOpen(!isBottomSheetOpen))}
+          onTouchStart={(e) => preventFocusLoss(e, () => setIsBottomSheetOpen(!isBottomSheetOpen))}
+          className={`mobile-tool-btn format-trigger-btn ${isBottomSheetOpen ? 'active' : ''}`}
+          title="More Formatting Options"
+          style={{ width: '48px', gap: '2px', backgroundColor: 'var(--brand-50)', borderColor: 'var(--brand-200)' }}
         >
-          <TableIcon size={16} />
-        </button>
-        <button
-          onMouseDown={(e) => preventFocusLoss(e, handleInsertLink)}
-          onTouchStart={(e) => preventFocusLoss(e, handleInsertLink)}
-          className={`mobile-tool-btn ${editor.isActive('link') ? 'active' : ''}`}
-          title="Insert Link"
-        >
-          <LinkIcon size={16} />
+          <ChevronUp size={14} style={{ transform: isBottomSheetOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'var(--brand-600)' }} />
+          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--brand-700)' }}>Aa</span>
         </button>
       </div>
+
+      {/* 3. Expandable Bottom Sheet Panel */}
+      {isBottomSheetOpen && (
+        <div className="mobile-formatter-sheet-backdrop" onClick={() => setIsBottomSheetOpen(false)}>
+          <div className="mobile-formatter-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-header">
+              <span className="sheet-title">Format Options</span>
+              <button className="sheet-close-btn" onClick={() => setIsBottomSheetOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="sheet-tabs">
+              <button 
+                className={`sheet-tab-btn ${activeSheetTab === 'text' ? 'active' : ''}`}
+                onClick={() => setActiveSheetTab('text')}
+              >
+                Text
+              </button>
+              <button 
+                className={`sheet-tab-btn ${activeSheetTab === 'paragraph' ? 'active' : ''}`}
+                onClick={() => setActiveSheetTab('paragraph')}
+              >
+                Paragraph
+              </button>
+              <button 
+                className={`sheet-tab-btn ${activeSheetTab === 'insert' ? 'active' : ''}`}
+                onClick={() => setActiveSheetTab('insert')}
+              >
+                Insert
+              </button>
+            </div>
+
+            <div className="sheet-body">
+              {activeSheetTab === 'text' && (
+                <div className="sheet-pane text-pane">
+                  {/* Font Family selector */}
+                  <div className="sheet-form-row">
+                    <label>Font Family</label>
+                    <select 
+                      value={editor.getAttributes('textStyle').fontFamily || 'Inter'}
+                      onChange={(e) => handleFontChange(e.target.value)}
+                      className="sheet-select"
+                    >
+                      <optgroup label="Google Fonts">
+                        {['Inter', 'Lora', 'Fira Code', 'Playfair Display', 'Roboto', 'Outfit'].map(font => (
+                          <option key={font} value={font}>{font}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="System Fonts">
+                        {['Arial', 'Calibri', 'Times New Roman', 'Georgia', 'Courier New', 'Verdana'].map(font => (
+                          <option key={font} value={font}>{font}</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  {/* Font Size Selector */}
+                  <div className="sheet-form-row">
+                    <label>Font Size</label>
+                    <div className="sheet-size-control">
+                      <button 
+                        onClick={() => handleFontSizeChange(-1)}
+                        className="size-btn"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className="size-indicator">{getActiveFontSize()}px</span>
+                      <button 
+                        onClick={() => handleFontSizeChange(1)}
+                        className="size-btn"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Text Color Picker Grid */}
+                  <div className="sheet-form-row-vertical">
+                    <label>Text Color</label>
+                    <div className="color-swatch-grid">
+                      {TEXT_COLORS.map(color => (
+                        <button
+                          key={color.value}
+                          onClick={() => editor.chain().focus().setColor(color.value).run()}
+                          className={`color-swatch ${editor.isActive('textStyle', { color: color.value }) ? 'active' : ''}`}
+                          style={{ backgroundColor: color.value }}
+                          title={color.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Highlight Color Picker Grid */}
+                  <div className="sheet-form-row-vertical">
+                    <label>Highlight Color</label>
+                    <div className="color-swatch-grid">
+                      {HIGHLIGHT_COLORS.map(color => (
+                        <button
+                          key={color.value}
+                          onClick={() => {
+                            if (color.value === 'transparent') {
+                              editor.chain().focus().unsetHighlight().run();
+                            } else {
+                              editor.chain().focus().toggleHighlight({ color: color.value }).run();
+                            }
+                          }}
+                          className={`color-swatch ${color.value === 'transparent' ? 'transparent-swatch' : ''} ${editor.isActive('highlight', { color: color.value }) ? 'active' : ''}`}
+                          style={color.value === 'transparent' ? {} : { backgroundColor: color.value }}
+                          title={color.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Clear formatting */}
+                  <button 
+                    onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+                    className="sheet-action-btn-danger"
+                  >
+                    <Trash2 size={14} /><span>Clear Text Formatting</span>
+                  </button>
+                </div>
+              )}
+
+              {activeSheetTab === 'paragraph' && (
+                <div className="sheet-pane paragraph-pane">
+                  {/* Headings */}
+                  <div className="sheet-form-row-vertical">
+                    <label>Heading Style</label>
+                    <div className="heading-selector-grid">
+                      <button 
+                        onClick={() => setHeadingStyle('paragraph')}
+                        className={`heading-select-btn ${editor.isActive('paragraph') ? 'active' : ''}`}
+                      >
+                        Paragraph
+                      </button>
+                      <button 
+                        onClick={() => setHeadingStyle(1)}
+                        className={`heading-select-btn ${editor.isActive('heading', { level: 1 }) ? 'active' : ''}`}
+                      >
+                        Heading 1
+                      </button>
+                      <button 
+                        onClick={() => setHeadingStyle(2)}
+                        className={`heading-select-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`}
+                      >
+                        Heading 2
+                      </button>
+                      <button 
+                        onClick={() => setHeadingStyle(3)}
+                        className={`heading-select-btn ${editor.isActive('heading', { level: 3 }) ? 'active' : ''}`}
+                      >
+                        Heading 3
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Alignment segmented control */}
+                  <div className="sheet-form-row-vertical">
+                    <label>Alignment</label>
+                    <div className="segmented-control">
+                      <button 
+                        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                        className={`segment-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
+                      >
+                        <AlignLeft size={16} />
+                      </button>
+                      <button 
+                        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                        className={`segment-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
+                      >
+                        <AlignCenter size={16} />
+                      </button>
+                      <button 
+                        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                        className={`segment-btn ${editor.isActive({ textAlign: 'right' }) ? 'active' : ''}`}
+                      >
+                        <AlignRight size={16} />
+                      </button>
+                      <button 
+                        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                        className={`segment-btn ${editor.isActive({ textAlign: 'justify' }) ? 'active' : ''}`}
+                      >
+                        <AlignJustify size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lists */}
+                  <div className="sheet-form-row-vertical">
+                    <label>List Styles</label>
+                    <div className="segmented-control">
+                      <button 
+                        onClick={() => editor.chain().focus().toggleBulletList().run()}
+                        className={`segment-btn list-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
+                        style={{ flexGrow: 1 }}
+                      >
+                        <List size={16} /><span style={{ marginLeft: '6px', fontSize: '13px' }}>Bulleted List</span>
+                      </button>
+                      <button 
+                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                        className={`segment-btn list-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
+                        style={{ flexGrow: 1 }}
+                      >
+                        <ListOrdered size={16} /><span style={{ marginLeft: '6px', fontSize: '13px' }}>Numbered List</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeSheetTab === 'insert' && (
+                <div className="sheet-pane insert-pane">
+                  {/* Insert Actions Grid */}
+                  <div className="insert-actions-grid">
+                    <button 
+                      onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                      className="insert-action-card"
+                    >
+                      <TableIcon size={20} className="text-brand" />
+                      <span>Table (3x3)</span>
+                    </button>
+                    <button 
+                      onClick={handleInsertLink}
+                      className={`insert-action-card ${editor.isActive('link') ? 'active' : ''}`}
+                    >
+                      <LinkIcon size={20} className="text-brand" />
+                      <span>Hyperlink</span>
+                    </button>
+                    <button 
+                      onClick={() => editor.commands.setPageBreak()}
+                      className="insert-action-card"
+                    >
+                      <Plus size={20} className="text-brand" />
+                      <span>Page Break</span>
+                    </button>
+                    <button 
+                      onClick={() => mobileImageInputRef.current?.click()}
+                      className="insert-action-card"
+                    >
+                      <ImageIcon size={20} className="text-brand" />
+                      <span>Upload Image</span>
+                    </button>
+                  </div>
+                  <input
+                    type="file"
+                    ref={mobileImageInputRef}
+                    style={{ display: 'none' }}
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
