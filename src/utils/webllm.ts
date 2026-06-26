@@ -71,7 +71,7 @@ export function getAvailableEdgeModels(): EdgeModel[] {
 
   try {
     const prebuiltList = prebuiltAppConfig.model_list || [];
-    const edgeCompatibleKeywords = ['1b', '2b', '3b', '1.5b', 'e2b', 'gemma-2b', 'gemma2-2b', 'gemma-4-e2b', 'gemma4-2b', 'phi-3-mini', 'phi-3'];
+    const edgeCompatibleKeywords = ['1b', '2b', '3b', '4b', '1.5b', 'e2b', 'e4b', 'gemma-2b', 'gemma2-2b', 'gemma-4', 'gemma4', 'gemma-4-e2b', 'gemma-4-e4b', 'gemma4-2b', 'phi-3-mini', 'phi-3'];
     
     const dynamicallyDiscovered = prebuiltList
       .filter(item => {
@@ -86,10 +86,22 @@ export function getAvailableEdgeModels(): EdgeModel[] {
           .replace(/-it$/, '')
           .replace(/-/g, ' ');
         
+        const idLower = item.model_id.toLowerCase();
+        let size = '2.0 GB';
+        if (idLower.includes('1b') || idLower.includes('1.5b')) {
+          size = '1.2 GB';
+        } else if (idLower.includes('2b') || idLower.includes('e2b')) {
+          size = '1.6 GB';
+        } else if (idLower.includes('3b') || idLower.includes('e3b')) {
+          size = '1.8 GB';
+        } else if (idLower.includes('4b') || idLower.includes('e4b')) {
+          size = '2.8 GB';
+        }
+
         return {
           model_id: item.model_id,
           name: cleanName,
-          size: item.model_id.includes('1b') ? '1.2 GB' : item.model_id.includes('2b') ? '1.6 GB' : '2.0 GB'
+          size
         };
       });
       
