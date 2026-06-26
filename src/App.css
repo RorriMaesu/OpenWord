@@ -5207,11 +5207,18 @@ mark {
   }
 
   /* Collapsible WebGPU Warning overrides */
+  .webgpu-mobile-warning {
+    max-height: 250px;
+    overflow: hidden;
+    transition: max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1), padding 0.25s ease-out;
+  }
   .webgpu-mobile-warning.collapsed {
-    padding: 8px 12px !important;
+    max-height: 38px;
+    padding: 6px 12px !important;
     align-items: center !important;
   }
   .webgpu-mobile-warning.expanded {
+    max-height: 250px;
     padding: 12px !important;
     align-items: flex-start !important;
   }

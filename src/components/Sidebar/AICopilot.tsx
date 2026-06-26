@@ -94,7 +94,15 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [showMobileWarning, setShowMobileWarning] = useState<boolean>(() => {
     return localStorage.getItem('openword_copilot_hide_mobile_warning') !== 'true';
   });
-  const [warningCollapsed, setWarningCollapsed] = useState<boolean>(true);
+  const [warningCollapsed, setWarningCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem('openword_copilot_warning_collapsed') !== 'false';
+  });
+
+  const handleToggleWarning = () => {
+    const nextState = !warningCollapsed;
+    setWarningCollapsed(nextState);
+    localStorage.setItem('openword_copilot_warning_collapsed', nextState.toString());
+  };
   const [detectedOS, setDetectedOS] = useState<OSDetails | null>(null);
   const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
   const [selectedOS, setSelectedOS] = useState<'Windows' | 'macOS' | 'Linux'>('Windows');
@@ -1103,11 +1111,11 @@ Response: Certainly, I will delete the outdated paragraph.
       {/* Mobile WebGPU memory warning card */}
       {modelMode === 'webgpu' && isMobile && isWebGPUAvailable && showMobileWarning && (
         <div className={`copilot-connection-alert webgpu-mobile-warning ${warningCollapsed ? 'collapsed' : 'expanded'}`}>
-          <AlertCircle className="alert-icon" size={18} style={{ marginTop: warningCollapsed ? '0' : '2px' }} />
+          <AlertCircle className="alert-icon" size={warningCollapsed ? 14 : 18} style={{ marginTop: warningCollapsed ? '0' : '2px' }} />
           <div className="alert-body" style={{ flexGrow: 1 }}>
             <div 
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
-              onClick={() => setWarningCollapsed(!warningCollapsed)}
+              onClick={handleToggleWarning}
             >
               <h4 style={{ margin: 0, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 Mobile Browser Warning 
