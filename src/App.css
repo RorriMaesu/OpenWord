@@ -5662,6 +5662,271 @@ mark {
   color: #f3e8ff !important;
 }
 
+/* Document Manager Bottom Sheet Styling */
+.doc-manager-sheet {
+  max-height: 85vh !important;
+  max-height: 85dvh !important;
+}
+
+.doc-manager-body {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.doc-manager-toolbar {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.doc-toolbar-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--bg-sheet);
+  color: var(--text-main);
+  transition: all 0.15s ease;
+}
+
+.doc-toolbar-btn.primary {
+  background: var(--brand-500);
+  border-color: var(--brand-600);
+  color: white;
+}
+
+.doc-toolbar-btn.primary:active {
+  background: var(--brand-600);
+}
+
+.doc-toolbar-btn:active:not(.primary) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.doc-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 2px;
+}
+
+.doc-list-container {
+  min-height: 120px;
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.doc-list-loading,
+.doc-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.doc-cards-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.doc-item-card:last-child {
+  border-bottom: none;
+}
+
+.doc-item-card:hover,
+.doc-item-card.active {
+  background-color: rgba(0, 120, 212, 0.04);
+}
+
+.doc-item-card.active .doc-card-title {
+  color: var(--brand-500);
+  font-weight: 600;
+}
+
+.doc-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.doc-card-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.doc-item-card.active .doc-card-icon {
+  color: var(--brand-500);
+}
+
+.doc-card-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.doc-card-title {
+  font-size: 13.5px;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-card-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.doc-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.doc-card-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.doc-card-action-btn:active {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: var(--text-main);
+}
+
+.doc-card-action-btn.delete:active {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.doc-card-action-arrow {
+  color: var(--text-muted);
+  margin-left: 4px;
+  opacity: 0.5;
+}
+
+.current-file-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.current-file-action-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-sheet);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.current-file-action-card:active {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-color: var(--brand-300);
+}
+
+.action-card-icon {
+  color: var(--brand-500);
+  flex-shrink: 0;
+}
+
+.action-card-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.action-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.action-card-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] .doc-list-container {
+  background: rgba(255, 255, 255, 0.01);
+}
+[data-theme='dark'] .doc-item-card:hover,
+[data-theme='dark'] .doc-item-card.active {
+  background-color: rgba(168, 85, 247, 0.06);
+}
+[data-theme='dark'] .doc-item-card.active .doc-card-title {
+  color: #c084fc;
+}
+[data-theme='dark'] .doc-item-card.active .doc-card-icon {
+  color: #c084fc;
+}
+[data-theme='dark'] .doc-card-action-btn:active {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme='dark'] .doc-card-action-btn.delete:active {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+[data-theme='dark'] .current-file-action-card:active {
+  background-color: rgba(255, 255, 255, 0.01);
+  border-color: #a855f7;
+}
+[data-theme='dark'] .action-card-icon {
+  color: #c084fc;
+}
+[data-theme='dark'] .doc-toolbar-btn.primary {
+  background: #a855f7;
+  border-color: #9333ea;
+}
+[data-theme='dark'] .doc-toolbar-btn.primary:active {
+  background: #9333ea;
+}
+
 
 
 

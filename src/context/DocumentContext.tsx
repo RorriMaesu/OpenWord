@@ -26,6 +26,8 @@ interface DocumentContextType {
   openLocalFile: (data: { name: string; html: string; margins: any; pageSize: any; orientation: any; headers: any; footers: any }) => void;
   createNewDocument: () => void;
   restoreAutosave: () => Promise<boolean>;
+  openDocumentById: (id: string) => Promise<void>;
+  deleteDocumentById: (id: string) => Promise<void>;
   autoSaveEnabled: boolean;
   setAutoSaveEnabled: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -95,17 +97,57 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('openword_autosave_enabled', autoSaveEnabled.toString());
   }, [autoSaveEnabled]);
 
+  // Load last active document or legacy autosave on startup
+  useEffect(() => {
+    const initDocument = async () => {
+      try {
+        const activeId = localStorage.getItem('openword_active_doc_id');
+        if (activeId) {
+          const doc = await loadDocumentAndHydrate(activeId);
+          if (doc) {
+            setDocState(doc);
+            setActiveFileName(`${doc.title}.docx`);
+            setIsDirty(false);
+            return;
+          }
+        }
+        
+        // Fallback for legacy document autosave compatibility
+        const legacyDoc = await loadDocumentAndHydrate('autosave-doc');
+        if (legacyDoc) {
+          const newId = `doc_${Date.now()}`;
+          const migratedDoc = { ...legacyDoc, id: newId };
+          setDocState(migratedDoc);
+          setActiveFileName(`${legacyDoc.title}.docx`);
+          localStorage.setItem('openword_active_doc_id', newId);
+          await autoSaveDocument(migratedDoc);
+          const { deleteDocument } = await import('../utils/db');
+          await deleteDocument('autosave-doc');
+          setIsDirty(false);
+        } else {
+          // Initialize first default document
+          const newId = `doc_${Date.now()}`;
+          const newDoc = { ...DEFAULT_DOC_STATE, id: newId };
+          setDocState(newDoc);
+          localStorage.setItem('openword_active_doc_id', newId);
+          await autoSaveDocument(newDoc);
+          setIsDirty(false);
+        }
+      } catch (err) {
+        console.error('Failed to initialize local documents:', err);
+      }
+    };
+    initDocument();
+  }, []);
+
   // Autosave loop - triggers every 5 seconds if document is dirty and autosave is enabled
   useEffect(() => {
-    if (!isDirty || !autoSaveEnabled) return;
+    if (!isDirty || !autoSaveEnabled || !docState.id || docState.id === 'current-doc') return;
     
     const interval = setInterval(async () => {
       try {
         setIsSaving(true);
-        await autoSaveDocument({
-          ...docState,
-          id: 'autosave-doc' // Autosave cache target key
-        });
+        await autoSaveDocument(docState);
         setIsDirty(false);
       } catch (err) {
         console.error('Autosave loop execution failed:', err);
@@ -177,9 +219,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const success = await fileSystemHelper.saveToActiveHandle(blob);
       if (success) {
         setIsDirty(false);
-        // Play sound or show feedback
       } else {
-        // Fall back to save as new file picker
         await saveAsNewFile();
       }
     } catch (err) {
@@ -218,10 +258,17 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Create new document from scratch
   const createNewDocument = () => {
-    setDocState(DEFAULT_DOC_STATE);
+    const newId = `doc_${Date.now()}`;
+    const newDoc = {
+      ...DEFAULT_DOC_STATE,
+      id: newId,
+      title: 'Untitled Document'
+    };
+    setDocState(newDoc);
     setActiveFileName('Untitled.docx');
+    localStorage.setItem('openword_active_doc_id', newId);
     fileSystemHelper.clearHandle();
-    setIsDirty(false);
+    setIsDirty(true); // triggers save
   };
 
   // Restore autosave state if it exists in IndexedDB
@@ -229,11 +276,13 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const restored = await loadDocumentAndHydrate('autosave-doc');
       if (restored) {
+        const newId = `doc_${Date.now()}`;
         setDocState({
           ...restored,
-          id: 'current-doc' // Map back to active document
+          id: newId
         });
         setActiveFileName(`${restored.title}.docx`);
+        localStorage.setItem('openword_active_doc_id', newId);
         setIsDirty(false);
         return true;
       }
@@ -241,6 +290,53 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error('Failed to restore autosaved document:', err);
     }
     return false;
+  };
+
+  // Open an existing document by its ID
+  const openDocumentById = async (id: string) => {
+    try {
+      setIsSaving(true);
+      // Auto-save currently active document if dirty
+      if (isDirty && docState.id && docState.id !== 'current-doc') {
+        await autoSaveDocument(docState);
+      }
+      
+      const doc = await loadDocumentAndHydrate(id);
+      if (doc) {
+        setDocState(doc);
+        setActiveFileName(`${doc.title}.docx`);
+        localStorage.setItem('openword_active_doc_id', id);
+        fileSystemHelper.clearHandle();
+        setIsDirty(false);
+      }
+    } catch (err) {
+      console.error('Failed to open document:', id, err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Delete a document by its ID
+  const deleteDocumentById = async (id: string) => {
+    try {
+      const { deleteDocument } = await import('../utils/db');
+      await deleteDocument(id);
+      
+      // If we deleted the currently active document, switch to another or new
+      const activeId = localStorage.getItem('openword_active_doc_id');
+      if (activeId === id) {
+        const { getAllDocuments } = await import('../utils/db');
+        const remaining = await getAllDocuments();
+        const nextDoc = remaining.find(d => d.id !== id);
+        if (nextDoc) {
+          await openDocumentById(nextDoc.id);
+        } else {
+          createNewDocument();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete document:', id, err);
+    }
   };
 
   // Open imported local file
@@ -254,8 +350,9 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     footers: any;
   }) => {
     const title = data.name.replace(/\.[^/.]+$/, '');
+    const newId = `doc_${Date.now()}`;
     setDocState({
-      id: 'current-doc',
+      id: newId,
       title,
       content: {
         type: 'doc',
@@ -275,7 +372,8 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       lastSaved: Date.now()
     });
     setActiveFileName(data.name);
-    setIsDirty(false);
+    localStorage.setItem('openword_active_doc_id', newId);
+    setIsDirty(true);
   };
 
   return (
@@ -303,6 +401,8 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         openLocalFile,
         createNewDocument,
         restoreAutosave,
+        openDocumentById,
+        deleteDocumentById,
         autoSaveEnabled,
         setAutoSaveEnabled
       }}

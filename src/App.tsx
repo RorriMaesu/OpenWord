@@ -6,12 +6,13 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { HeaderFooterManager } from './components/Editor/HeaderFooterManager';
 import { Editor as TiptapEditor } from '@tiptap/react';
-import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles, ArrowLeft, Check, RefreshCw, Menu } from 'lucide-react';
+import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles, ArrowLeft, Check, RefreshCw, Menu, FolderOpen } from 'lucide-react';
 import { getDocument, deleteDocument } from './utils/db';
 import './App.css';
 import { TutorialTour } from './components/Tutorial/TutorialTour';
 import { useIsMobile } from './utils/useIsMobile';
 import { MobileFormatter } from './components/MobileFormatter';
+import { DocumentManagerSheet } from './components/DocumentManagerSheet';
 
 const AppContent: React.FC = () => {
   const { 
@@ -22,8 +23,6 @@ const AppContent: React.FC = () => {
     updateLayoutMode,
     autoSaveEnabled,
     setAutoSaveEnabled,
-    createNewDocument,
-    saveAsNewFile,
     openLocalFile,
     isSaving,
     isDirty
@@ -47,6 +46,7 @@ const AppContent: React.FC = () => {
     return !isMobileSize;
   });
   const [showHeaderFooter, setShowHeaderFooter] = useState(false);
+  const [showDocManager, setShowDocManager] = useState(false);
 
   // Onboarding Tutorial states
   const [isTourOpen, setIsTourOpen] = useState<boolean>(() => {
@@ -274,28 +274,25 @@ const AppContent: React.FC = () => {
             >
               <ArrowLeft size={16} />
             </a>
-            <select
-              className="mobile-file-menu-select"
-              value=""
-              onChange={async (e) => {
-                const action = e.target.value;
-                if (action === 'new') createNewDocument();
-                else if (action === 'open') fileInputRef.current?.click();
-                else if (action === 'save') await saveActiveFile();
-                else if (action === 'saveas') await saveAsNewFile();
-                else if (action === 'print') window.print();
-                else if (action === 'headerfooter') setShowHeaderFooter(true);
-                e.target.value = ''; // Reset select element value
+            <button
+              onClick={() => setShowDocManager(true)}
+              className="titlebar-icon-btn mobile-folder-btn"
+              title="Open Document Manager"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                borderRadius: '8px',
+                color: 'white',
+                marginLeft: '4px',
+                background: 'rgba(255, 255, 255, 0.12)',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                cursor: 'pointer'
               }}
             >
-              <option value="" disabled hidden>File</option>
-              <option value="new">New Doc</option>
-              <option value="open">Import File...</option>
-              <option value="save">Save</option>
-              <option value="saveas">Save As...</option>
-              <option value="print">Print / PDF</option>
-              <option value="headerfooter">Header & Footer Settings...</option>
-            </select>
+              <FolderOpen size={16} />
+            </button>
             <input
               type="file"
               ref={fileInputRef}
@@ -593,6 +590,16 @@ const AppContent: React.FC = () => {
         <div className="status-toast no-print">
           {statusToast}
         </div>
+      )}
+
+      {/* Document Manager Bottom Sheet */}
+      {isMobile && (
+        <DocumentManagerSheet
+          isOpen={showDocManager}
+          onClose={() => setShowDocManager(false)}
+          onOpenHeaderFooter={() => setShowHeaderFooter(true)}
+          fileInputRef={fileInputRef}
+        />
       )}
     </div>
   );
