@@ -1,6 +1,6 @@
 # 📝 OpenWord
 
-OpenWord is a professional, high-fidelity, client-side word processor built with React, TypeScript, and Tiptap. It simulates a premium Microsoft Word desktop interface directly in your browser, featuring virtual pagination, dynamic margins, a responsive floating ribbon menu, auto-saving, and dark mode support.
+OpenWord is a professional, high-fidelity, client-side word processor built with React, TypeScript, and Tiptap. It simulates a premium Microsoft Word desktop interface directly in your browser, featuring virtual pagination, dynamic margins, a responsive floating ribbon menu, auto-saving, dark mode support, and a hybrid local AI engine.
 
 ## 🚀 Use Live or Run Locally
 
@@ -25,6 +25,7 @@ OpenWord is a professional, high-fidelity, client-side word processor built with
 Unlike standard cloud word processors, OpenWord is an **offline-first, zero-server application**. 
 *   **Privacy-First:** Your documents are never uploaded to any external server. All text processing, imports, database updates, and document compilation occur directly in your browser sandbox.
 *   **No Accounts Needed:** Start drafting immediately. Your workspace recovers itself automatically on restart using client-side IndexedDB persistence.
+*   **Local AI Execution**: Generative AI features run 100% locally on your computer's GPU/CPU (via WebGPU or a local Ollama daemon), meaning your text prompts never leave your device.
 
 ---
 
@@ -41,14 +42,21 @@ Unlike standard cloud word processors, OpenWord is an **offline-first, zero-serv
 *   **Sidebar Navigation Outline:** Auto-updating outline list based on heading tags to navigate large documents quickly.
 *   **Aesthetic Theme Selector:** Seamless light-to-dark canvas transition via the bottom Status Bar.
 
-### 🤖 Local Offline OpenWord AI
-*   **Zero-Server Offline Collaboration:** Connects directly to a local [Ollama](https://ollama.com) instance running Gemma, Llama, Qwen, or other models to assist with drafting, rewriting, and expanding.
-*   **Dual Document-Editing Modes:**
-    - **Direct Edit Mode (Real-Time):** Streams AI edits directly into the document editor in real-time using a cursor-stable block shifter.
-    - **Proposal Mode (Visual Diff):** Streams changes to a sidebar visual diff card (rendered with green/red additions/deletions), allowing you to review edits and click **Accept & Apply** or **Reject** before mutating the document.
-*   **Robust XML Tool Actions:** Parses structural document actions (`<edit_block>`, `<insert_block>`, `<delete_block>`) dynamically, supporting arbitrary attribute order, spacing, and quote styles.
-*   **Hardware and OS Profiler:** Detects GPU VRAM and OS details at startup to recommend the most optimal model size (e.g., Gemma 4 E2B for lighter GPUs).
-*   **Speculative MTP Decoding Toggle:** Activates speculative token predictions to accelerate output text stream speeds.
+### 🤖 Local Offline AI Copilot
+OpenWord hosts a highly advanced local AI client supporting two execution modes:
+1. **Ollama mode (Local Daemon)**: Connects to a local Ollama instance running on port `11434`. Includes automated hardware checking (profiling GPU VRAM to recommend models) and one-click daemon launching.
+2. **WebGPU mode (In-Browser)**: Runs models directly inside your browser tab without any native backend software.
+
+*   **Hybrid WebGPU Engines**:
+    - **Google LiteRT-LM (TFLite)**: Automatically routes **Gemma 4 E2B** to Google's official, highly optimized LiteRT runtime. It streams `.litertlm` model weights, caches them in Cache Storage for instant startup, and utilizes optimized shaders to prevent browser OOM crashes.
+    - **WebWorker MLC Engine**: Runs Llama 3.2 1B, Gemma 2 2B, Qwen, and Phi models off the main thread.
+*   **Web Worker Offloading**: Moving 100% of WebGPU execution, model compilation, and downloading to a background thread to keep the user interface fully responsive at 60fps.
+*   **Mobile memory safeguards**: Automatically detects mobile user agents to cap context windows to `1024` tokens and sliding windows to `-1` to avoid VRAM exhaustion crashes. Includes warnings for high-memory models.
+*   **Ollama Fallback Switcher**: If Ollama is offline or the user lacks VRAM (under 3GB), the UI suggests switching to WebGPU mode to run lighter models (Llama 3.2 1B) in-browser.
+*   **Dual Document-Editing Modes**:
+    - **Direct Edit Mode (Real-Time)**: Streams AI edits directly into the document editor in real-time.
+    - **Proposal Mode (Visual Diff)**: Streams changes to a sidebar visual diff card (rendered with green/red additions/deletions), allowing you to review edits and click **Accept & Apply** or **Reject** before mutating the document.
+*   **Robust XML Tool Actions**: Parses structural document actions (`<edit_block>`, `<insert_block>`, `<delete_block>`) dynamically, supporting arbitrary attribute order, spacing, and quote styles.
 
 ### 🔒 Client-Side Storage & IO
 *   **IndexedDB Autosave:** Background saving to IndexedDB (v2) with an automatic session recovery dialog on startup.
@@ -59,26 +67,38 @@ Unlike standard cloud word processors, OpenWord is an **offline-first, zero-serv
 
 ## ⚙️ Architecture & Data Flow
 
-OpenWord is designed to decouple Tiptap's rich-text events from our React rendering context for fluid editing performance:
+OpenWord separates UI rendering from document state and heavy AI workloads using Web Workers and Service Caches:
 
 ```
-                  +----------------------------------+
-                  |       Tiptap/ProseMirror         |
-                  +----------------------------------+
-                                   |
-                         (onUpdate Event / JSON)
-                                   v
-                  +----------------------------------+
-                  |    React DocumentContext State   |
-                  +----------------------------------+
-                     /                            \
-      (Debounced 5s Autosave)             (Debounced 150ms Break)
-                   /                                \
-                  v                                  v
-  +-------------------------------+   +-------------------------------+
-  |       IndexedDB Storage       |   |  Virtual Pagination Extension |
-  |      (Recoverable Session)    |   |     (DOM Height Measure)      |
-  +-------------------------------+   +-------------------------------+
+                                 +--------------------------------+
+                                 |       Tiptap/ProseMirror       |
+                                 +--------------------------------+
+                                                 |
+                                       (onUpdate Event / JSON)
+                                                 v
+                                 +--------------------------------+
+                                 |  React DocumentContext State   |
+                                 +--------------------------------+
+                                    /           |              \
+                                   /            |               \
+                   (Debounced 5s) /             | (150ms Break)  \ (Chat Prompts)
+                                 v              v                 v
+                  +---------------+  +---------------+  +--------------------------+
+                  |   IndexedDB   |  |   Pagination  |  |  AI Switcher Controller  |
+                  |    Storage    |  |   Extension   |  |     (webllm.ts helper)   |
+                  +---------------+  +---------------+  +--------------------------+
+                                                           /                    \
+                                                  (Provider: 'webllm')    (Provider: 'litert')
+                                                         /                        \
+                                                        v                          v
+                                           +-----------------------+     +--------------------+
+                                           | WebWorker MLC Engine  |     |  Google LiteRT-LM  |
+                                           |  (WASM Background)    |     |   (Object URL)     |
+                                           +-----------------------+     +--------------------+
+                                                        |                          |
+                                                        v                          v
+                                                 [Cache Storage]            [Cache Storage]
+                                                  (webllm-cache)            (litert-lm-cache)
 ```
 
 ---
@@ -93,11 +113,11 @@ OpenWord is designed to decouple Tiptap's rich-text events from our React render
 │   │   ├── Editor/         # Custom extensions and pagination logic
 │   │   ├── Ribbon/         # Toolbar operations (Font, spacing, view)
 │   │   ├── Ruler/          # Interactive margin ruler
-│   │   ├── Sidebar/        # Document navigation outline
+│   │   ├── Sidebar/        # Outline & local AI Copilot panel
 │   │   └── StatusBar/      # Page counter, layout toggles, theme switcher
 │   ├── context/            # Global Document layout & editing state
 │   ├── styles/             # Harmony CSS variables & dark theme tokens
-│   ├── utils/              # Exporters, DB helpers, and file system handlers
+│   ├── utils/              # Exporters, DB helpers, Web Worker handlers, LiteRT-LM wrappers
 │   ├── App.tsx             # Application shell
 │   └── main.tsx            # App bootstrapping
 ├── package.json            # Deployment scripts and dependencies
@@ -135,6 +155,13 @@ Make sure you have [Node.js](https://nodejs.org/) installed.
 npm run build
 ```
 This generates a static website inside the `dist/` directory.
+
+### Deploying to GitHub Pages
+```bash
+npm run deploy
+```
+This builds the application and deploys the static files to your repository's `gh-pages` branch.
+
 ---
 
 ## 🗺️ Roadmap
