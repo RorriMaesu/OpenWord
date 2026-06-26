@@ -4818,5 +4818,98 @@ mark {
   .mobile-sidebar-close-btn:active {
     background-color: var(--border-color);
   }
+
+  /* Sheet Header Badge */
+  .sheet-header-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand-700);
+    background-color: var(--brand-100);
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    vertical-align: middle;
+    display: inline-block;
+  }
+
+  /* AI Copilot Mobile Touch Target Optimizations */
+  .mobile-drawer .copilot-input-area {
+    padding: 10px 14px;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .mobile-drawer .copilot-input-field {
+    min-height: 48px;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border-color: var(--border-color);
+  }
+  .mobile-drawer .copilot-send-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  
+  .mobile-drawer .status-model-row {
+    height: 48px;
+    gap: 8px;
+  }
+  .mobile-drawer .status-model-row select {
+    height: 44px;
+    font-size: 13.5px;
+    padding: 8px 12px;
+    flex-grow: 1;
+    border-radius: 6px;
+  }
+  .mobile-drawer .copilot-refresh-btn,
+  .mobile-drawer .copilot-download-toggle-btn,
+  .mobile-drawer .copilot-clear-chat-btn,
+  .mobile-drawer .downloader-close {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--bg-sheet);
+    border: 1px solid var(--border-color);
+  }
+  
+  .mobile-drawer .downloader-select {
+    height: 44px;
+    font-size: 13.5px;
+    padding: 8px 12px;
+    border-radius: 6px;
+  }
+  .mobile-drawer .downloader-text-input {
+    height: 44px;
+    font-size: 13.5px;
+    padding: 8px 12px;
+    border-radius: 6px;
+  }
+  
+  .mobile-drawer .shortcut-tag-btn {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    border-radius: 20px;
+  }
+  
+  .mobile-drawer .bubble-action-bar {
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .mobile-drawer .bubble-action-btn {
+    min-height: 38px;
+    padding: 6px 14px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+  
+  .mobile-drawer .diff-transition-indicator {
+    padding: 8px 0;
+  }
 }
 

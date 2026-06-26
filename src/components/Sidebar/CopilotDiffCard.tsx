@@ -1,8 +1,9 @@
 import React from 'react';
 import { Editor } from '@tiptap/react';
-import { Check, X, Sparkles, ArrowRight } from 'lucide-react';
+import { Check, X, Sparkles, ArrowRight, ArrowDown } from 'lucide-react';
 import { applyBlockOperations } from '../../utils/blocks';
 import type { BlockOperation, DocumentBlock } from '../../utils/blocks';
+import { useIsMobile } from '../../utils/useIsMobile';
 
 interface CopilotDiffCardProps {
   editor: Editor | null;
@@ -21,6 +22,8 @@ export const CopilotDiffCard: React.FC<CopilotDiffCardProps> = ({
   onStatusChange,
   readOnly = false,
 }) => {
+  const isMobile = useIsMobile();
+
   const handleAccept = () => {
     if (!editor) return;
     try {
@@ -108,7 +111,11 @@ export const CopilotDiffCard: React.FC<CopilotDiffCardProps> = ({
                 {/* Edits showing transition arrow */}
                 {op.type === 'edit' && (
                   <div className="diff-transition-indicator">
-                    <ArrowRight size={14} className="text-gray-400" />
+                    {isMobile ? (
+                      <ArrowDown size={14} className="text-gray-400" />
+                    ) : (
+                      <ArrowRight size={14} className="text-gray-400" />
+                    )}
                   </div>
                 )}
 

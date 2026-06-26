@@ -105,6 +105,12 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
     }
   };
 
+  const getWordCount = () => {
+    if (!editor) return 0;
+    const text = editor.getText();
+    return text.trim() ? text.trim().split(/\s+/).length : 0;
+  };
+
   const getActiveFontSize = () => {
     const attrs = editor.getAttributes('textStyle');
     if (attrs && attrs.fontSize) {
@@ -325,7 +331,10 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor }) => {
         <div className="mobile-formatter-sheet-backdrop" onClick={() => setIsBottomSheetOpen(false)}>
           <div className="mobile-formatter-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-header">
-              <span className="sheet-title">Format Options</span>
+              <span className="sheet-title">
+                Format Options
+                <span className="sheet-header-badge">{getWordCount()} words</span>
+              </span>
               <button className="sheet-close-btn" onClick={() => setIsBottomSheetOpen(false)}>
                 <X size={18} />
               </button>

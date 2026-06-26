@@ -1434,7 +1434,7 @@ Response: Certainly, I will delete the outdated paragraph.
       </div>
 
       {/* Editor Shortcuts Section */}
-      {isConnected && (
+      {((modelMode === 'ollama' && isConnected) || (modelMode === 'webgpu' && isWebgpuLoaded)) && (
         <div className="copilot-editor-shortcuts">
           <button onClick={() => applyPreset('continue')} className="shortcut-tag-btn">
             <Sparkles size={11} />
@@ -1508,7 +1508,7 @@ Response: Certainly, I will delete the outdated paragraph.
           value={inputPrompt}
           onChange={(e) => setInputPrompt(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
               e.preventDefault();
               handleSendPrompt();
             }
