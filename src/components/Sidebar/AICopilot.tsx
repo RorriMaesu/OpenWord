@@ -21,7 +21,7 @@ import type { DocumentBlock, BlockOperation } from '../../utils/blocks';
 import { CopilotDiffCard } from './CopilotDiffCard';
 import { AgentStreamParser } from '../../utils/agentParser';
 import type { ToolCallEvent } from '../../utils/agentParser';
-import { getFriendlyModelName } from '../../utils/modelHelper';
+import { getFriendlyModelName, isCompatibleModel } from '../../utils/modelHelper';
 import { 
   checkWebGPUSupport, getAvailableEdgeModels, loadWebGPUEngine, 
   isEngineLoaded, streamWebGPUChat, clearWebGPUCache 
@@ -276,8 +276,11 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
         if (savedModel && modelList.includes(savedModel)) {
           setSelectedModel(savedModel);
         } else {
-          const hasRecommended = modelList.some(m => m.startsWith(hardware?.recommendedModel || 'gemma4'));
-          if (!hasRecommended) {
+          const rec = hardware?.recommendedModel || 'gemma4:e2b';
+          const compatibleModel = modelList.find(m => isCompatibleModel(m, rec));
+          if (compatibleModel) {
+            setSelectedModel(compatibleModel);
+          } else {
             // Find any gemma model
             const gemmaModel = modelList.find(m => m.includes('gemma'));
             if (gemmaModel) {
@@ -285,8 +288,6 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
             } else {
               setSelectedModel(modelList[0]);
             }
-          } else {
-            setSelectedModel(hardware?.recommendedModel || 'gemma4:e2b');
           }
         }
       }
@@ -1438,7 +1439,7 @@ Response: Certainly, I will delete the outdated paragraph.
           </div>
           <p className="hw-info"><strong>GPU:</strong> {hardware.gpuName} (~{hardware.estimatedVramGb}GB VRAM)</p>
           <p className="hw-recommend"><strong>Recommendation:</strong> Use <code>{hardware.recommendedModel}</code>. {hardware.reason}</p>
-          {!(models.includes(hardware.recommendedModel) || models.some(m => m.startsWith(hardware.recommendedModel))) && (
+          {!models.some(m => isCompatibleModel(m, hardware.recommendedModel)) && (
             <button 
               onClick={() => {
                 setDownloadModelName('custom');

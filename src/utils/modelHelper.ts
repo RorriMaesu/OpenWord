@@ -32,3 +32,33 @@ export function getFriendlyModelName(modelName: string): string {
     .filter(Boolean)
     .join(' ');
 }
+
+/**
+ * Checks if a candidate model tag is compatible with a target recommended model.
+ * Maps legacy gemma4 model tags (2b, 4b, 9b) to the official ones (e2b, e4b, 12b) and vice-versa.
+ */
+export function isCompatibleModel(candidate: string, target: string): boolean {
+  if (!candidate || !target) return false;
+  if (candidate === target) return true;
+
+  // Clean tags of any trailing ':latest' or tag details
+  const cleanCandidate = candidate.split(':')[0] + ':' + (candidate.split(':')[1] || 'latest').replace(/:latest$/, '');
+  const cleanTarget = target.split(':')[0] + ':' + (target.split(':')[1] || 'latest').replace(/:latest$/, '');
+
+  if (cleanCandidate === cleanTarget) return true;
+
+  const compatibilityMap: Record<string, string[]> = {
+    'gemma4:e2b': ['gemma4:e2b', 'gemma4:2b'],
+    'gemma4:e4b': ['gemma4:e4b', 'gemma4:4b'],
+    'gemma4:12b': ['gemma4:12b', 'gemma4:9b'],
+    'gemma4:26b': ['gemma4:26b'],
+    'gemma4:31b': ['gemma4:31b'],
+    // Reverse compatibility
+    'gemma4:2b': ['gemma4:e2b', 'gemma4:2b'],
+    'gemma4:4b': ['gemma4:e4b', 'gemma4:4b'],
+    'gemma4:9b': ['gemma4:12b', 'gemma4:9b']
+  };
+
+  const targets = compatibilityMap[cleanTarget] || [cleanTarget];
+  return targets.some(t => cleanCandidate.startsWith(t) || t.startsWith(cleanCandidate));
+}
