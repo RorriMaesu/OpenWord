@@ -490,6 +490,22 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
 
     try {
       const targetModelId = selectedWebgpuModel === 'custom' ? 'custom-webgpu-model' : selectedWebgpuModel;
+      
+      // Warn mobile users about high-memory model crash/reload loops
+      if (isMobile && (targetModelId.toLowerCase().includes('gemma-4') || targetModelId.toLowerCase().includes('phi-3'))) {
+        const proceed = window.confirm(
+          "⚠️ High Memory Warning\n\n" +
+          "Gemma 4 E2B is highly resource-intensive and requires a phone with at least 8GB of RAM. " +
+          "Loading it in a mobile browser tab may crash/reload Chrome.\n\n" +
+          "For a stable mobile experience, we recommend using Llama 3.2 1B (Mobile Friendly).\n\n" +
+          "Do you want to proceed?"
+        );
+        if (!proceed) {
+          setIsWebgpuLoading(false);
+          return;
+        }
+      }
+
       await loadWebGPUEngine(
         targetModelId,
         customConfig,
