@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDocument } from '../../context/DocumentContext';
-import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles, Coffee } from 'lucide-react';
+import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles, Coffee, Moon, Sun, Cloud } from 'lucide-react';
 import { Editor } from '@tiptap/react';
 import { AICopilot } from './AICopilot';
 import { useIsMobile } from '../../utils/useIsMobile';
@@ -25,7 +25,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab: controlledTab,
   setActiveTab: controlledSetTab
 }) => {
-  const { isSaving, isDirty } = useDocument();
+  const { 
+    isSaving, 
+    isDirty,
+    theme,
+    toggleTheme,
+    autoSaveEnabled,
+    setAutoSaveEnabled
+  } = useDocument();
   const isMobile = useIsMobile();
   
   const containerRef = useRef<HTMLDivElement>(null);
@@ -490,6 +497,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="prop-label">Storage target</span>
                   <span className="prop-value">IndexedDB / Local</span>
                 </div>
+              </div>
+            </div>
+
+            <h4 className="pane-title border-top">Preferences</h4>
+            <div className="props-list">
+              <div className="props-item has-switch">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {theme === 'dark' ? (
+                    <Sun size={16} className="prop-icon" style={{ color: '#e0a800' }} />
+                  ) : (
+                    <Moon size={16} className="prop-icon" />
+                  )}
+                  <div className="prop-detail">
+                    <span className="prop-label">Dark Theme</span>
+                    <span className="prop-value">{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                  </div>
+                </div>
+                <label className="switch">
+                  <input 
+                    type="checkbox" 
+                    checked={theme === 'dark'} 
+                    onChange={toggleTheme} 
+                  />
+                  <span className="switch-slider round"></span>
+                </label>
+              </div>
+
+              <div className="props-item has-switch">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Cloud size={16} className="prop-icon" />
+                  <div className="prop-detail">
+                    <span className="prop-label">AutoSave</span>
+                    <span className="prop-value">{autoSaveEnabled ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                </div>
+                <label className="switch">
+                  <input 
+                    type="checkbox" 
+                    checked={autoSaveEnabled} 
+                    onChange={(e) => setAutoSaveEnabled(e.target.checked)} 
+                  />
+                  <span className="switch-slider round"></span>
+                </label>
               </div>
             </div>
 

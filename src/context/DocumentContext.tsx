@@ -30,6 +30,8 @@ interface DocumentContextType {
   deleteDocumentById: (id: string) => Promise<void>;
   autoSaveEnabled: boolean;
   setAutoSaveEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
 }
 
 const DEFAULT_DOC_STATE: DocumentState = {
@@ -84,6 +86,21 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const saved = localStorage.getItem('openword_autosave_enabled');
     return saved !== null ? saved === 'true' : true;
   });
+
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('openword_theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  }, []);
+
+  useEffect(() => {
+    document.body.parentElement?.setAttribute('data-theme', theme);
+    localStorage.setItem('openword_theme', theme);
+  }, [theme]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -404,7 +421,9 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         openDocumentById,
         deleteDocumentById,
         autoSaveEnabled,
-        setAutoSaveEnabled
+        setAutoSaveEnabled,
+        theme,
+        toggleTheme
       }}
     >
       <div style={{ display: 'contents' }} className={layoutMode === 'print' ? 'layout-print' : 'layout-pageless'}>

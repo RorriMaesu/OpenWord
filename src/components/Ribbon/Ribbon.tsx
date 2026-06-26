@@ -5,7 +5,7 @@ import {
   File, FolderOpen, Save, FileText, Printer, Bold, Italic, Underline,
   Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered,
   Heading, Image, Link, Columns, Palette, FileCheck,
-  ChevronDown, Moon, Table as TableIcon, Trash2, ArrowUpCircle,
+  ChevronDown, Moon, Sun, Table as TableIcon, Trash2, ArrowUpCircle,
   Scissors, Copy, Clipboard, Sparkles, Coffee
 } from 'lucide-react';
 import { importDocx } from '../../utils/docxImporter';
@@ -42,7 +42,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
     saveActiveFile,
     saveAsNewFile,
     openLocalFile,
-    createNewDocument
+    createNewDocument,
+    theme,
+    toggleTheme
   } = useDocument();
 
   const [activeTab, setActiveTab] = useState<'file' | 'home' | 'insert' | 'layout' | 'review' | 'view'>('home');
@@ -840,15 +842,15 @@ export const Ribbon: React.FC<RibbonProps> = ({
             <div className="ribbon-group-card">
               <div className="ribbon-group-controls">
                 <button
-                  onClick={() => {
-                    const isDark = document.body.parentElement?.getAttribute('data-theme') === 'dark';
-                    const newTheme = isDark ? 'light' : 'dark';
-                    document.body.parentElement?.setAttribute('data-theme', newTheme);
-                    localStorage.setItem('openword_theme', newTheme);
-                  }}
+                  onClick={toggleTheme}
                   className="tool-btn-large"
+                  title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 >
-                  <Moon size={20} className="dark-theme-toggle-icon" />
+                  {theme === 'dark' ? (
+                    <Sun size={20} className="dark-theme-toggle-icon" />
+                  ) : (
+                    <Moon size={20} className="dark-theme-toggle-icon" />
+                  )}
                   <span>Toggle Theme</span>
                 </button>
               </div>
