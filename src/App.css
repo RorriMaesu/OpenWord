@@ -5418,9 +5418,82 @@ mark {
     align-items: center !important;
   }
   .webgpu-mobile-warning.expanded {
-    max-height: 250px;
+    max-height: 450px;
     padding: 12px !important;
     align-items: flex-start !important;
   }
 }
+
+/* Warning action buttons styles */
+.warning-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.warning-action-btn.primary-warning {
+  background-color: HSL(35, 90%, 45%);
+  color: white;
+}
+
+.warning-action-btn.primary-warning:active {
+  background-color: HSL(35, 90%, 38%);
+}
+
+.warning-action-btn.secondary-warning {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: HSL(35, 90%, 35%);
+  border: 1px solid HSL(35, 90%, 80%);
+}
+
+.warning-action-btn.secondary-warning:active {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.warning-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dark theme overrides for WebGPU warning card */
+[data-theme='dark'] .webgpu-mobile-warning {
+  background-color: rgba(245, 158, 11, 0.08) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+[data-theme='dark'] .webgpu-mobile-warning h4 {
+  color: HSL(35, 95%, 65%) !important;
+}
+
+[data-theme='dark'] .webgpu-mobile-warning p {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme='dark'] .warning-close-btn {
+  color: HSL(35, 95%, 65%);
+}
+
+[data-theme='dark'] .warning-close-btn:active {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .warning-action-btn.secondary-warning {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: HSL(35, 95%, 70%);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+[data-theme='dark'] .warning-action-btn.secondary-warning:active {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 

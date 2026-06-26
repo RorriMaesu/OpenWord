@@ -175,3 +175,78 @@ export async function streamWebGPUChat(
     isCancelled = true;
   };
 }
+
+/**
+ * Unload the active WebGPU engine to release RAM and GPU memory.
+ */
+export async function unloadWebGPUEngine(): Promise<void> {
+  if (activeEngine) {
+    try {
+      await activeEngine.unload();
+    } catch (e) {
+      console.warn('Failed to unload WebGPU engine:', e);
+    }
+    activeEngine = null;
+    activeModelId = null;
+  }
+}
+
+/**
+ * Clear WebGPU model files from Cache Storage and metadata databases from IndexedDB.
+ */
+export async function clearWebGPUCache(): Promise<{ success: boolean; freedCaches: string[] }> {
+  const freedCaches: string[] = [];
+  
+  // 1. Unload engine to free memory first
+  await unloadWebGPUEngine();
+  
+  // 2. Clear Cache Storage
+  if (typeof window !== 'undefined' && 'caches' in window) {
+    try {
+      const keys = await window.caches.keys();
+      for (const key of keys) {
+        if (key.toLowerCase().includes('webllm') || key.toLowerCase().includes('mlc')) {
+          const deleted = await window.caches.delete(key);
+          if (deleted) {
+            freedCaches.push(`Cache: ${key}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error clearing Cache Storage keys:', err);
+    }
+  }
+  
+  // 3. Clear IndexedDB databases
+  if (typeof window !== 'undefined' && window.indexedDB && window.indexedDB.databases) {
+    try {
+      const dbs = await window.indexedDB.databases();
+      for (const db of dbs) {
+        if (db.name && (
+          db.name.startsWith('mlc_llm_db') || 
+          db.name.toLowerCase().includes('webllm') || 
+          db.name.toLowerCase().includes('mlc')
+        )) {
+          window.indexedDB.deleteDatabase(db.name);
+          freedCaches.push(`IndexedDB: ${db.name}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error clearing IndexedDB databases:', err);
+    }
+  } else if (typeof window !== 'undefined' && window.indexedDB) {
+    // Fallback delete database names
+    const commonDbs = ['mlc_llm_db'];
+    for (const dbName of commonDbs) {
+      try {
+        window.indexedDB.deleteDatabase(dbName);
+        freedCaches.push(`IndexedDB: ${dbName} (fallback)`);
+      } catch (err) {
+        // Ignore
+      }
+    }
+  }
+  
+  return { success: true, freedCaches };
+}
+

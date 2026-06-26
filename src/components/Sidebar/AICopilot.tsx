@@ -3,7 +3,7 @@ import { Editor } from '@tiptap/react';
 import { 
   Sparkles, Send, Bot, User, Settings, RefreshCw, Cpu, 
   CornerDownLeft, FileText, Clipboard, AlertCircle, ToggleLeft, ToggleRight,
-  Download, X, Trash2, ChevronDown
+  Download, X, Trash2, ChevronDown, Monitor, Info, Copy, Check
 } from 'lucide-react';
 import { 
   checkOllamaStatus, launchLocalOllama, fetchLocalModels, 
@@ -24,7 +24,7 @@ import type { ToolCallEvent } from '../../utils/agentParser';
 import { getFriendlyModelName } from '../../utils/modelHelper';
 import { 
   checkWebGPUSupport, getAvailableEdgeModels, loadWebGPUEngine, 
-  isEngineLoaded, streamWebGPUChat 
+  isEngineLoaded, streamWebGPUChat, clearWebGPUCache 
 } from '../../utils/webllm';
 import type { EdgeModel } from '../../utils/webllm';
 import { useIsMobile } from '../../utils/useIsMobile';
@@ -111,6 +111,46 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     setWarningCollapsed(nextState);
     localStorage.setItem('openword_copilot_warning_collapsed', nextState.toString());
   };
+
+  const [showWebgpuHelpModal, setShowWebgpuHelpModal] = useState<boolean>(false);
+  const [copiedUrl, setCopiedUrl] = useState<boolean>(false);
+  const [cacheSizeMB, setCacheSizeMB] = useState<number | null>(null);
+  const [isClearing, setIsClearing] = useState<boolean>(false);
+
+  const updateCacheSize = async () => {
+    if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.estimate) {
+      try {
+        const estimate = await navigator.storage.estimate();
+        if (estimate.usage !== undefined) {
+          setCacheSizeMB(Math.round(estimate.usage / (1024 * 1024)));
+        }
+      } catch (err) {
+        console.warn('Failed to estimate storage:', err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    updateCacheSize();
+  }, [isWebgpuLoaded]);
+
+  const handleClearCache = async () => {
+    if (window.confirm('This will unload any running model from RAM and delete downloaded WebGPU model weights (~1.2 - 2.2 GB) from browser storage. Proceed?')) {
+      setIsClearing(true);
+      try {
+        await clearWebGPUCache();
+        setIsWebgpuLoaded(false);
+        await updateCacheSize();
+        alert('Model memory and cache storage cleared successfully!');
+      } catch (err: any) {
+        console.error('Failed to clear WebGPU cache:', err);
+        alert(`Error clearing cache: ${err.message || err}`);
+      } finally {
+        setIsClearing(false);
+      }
+    }
+  };
+
   const [detectedOS, setDetectedOS] = useState<OSDetails | null>(null);
   const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
   const [selectedOS, setSelectedOS] = useState<'Windows' | 'macOS' | 'Linux'>('Windows');
@@ -1204,9 +1244,29 @@ Response: Certainly, I will delete the outdated paragraph.
               </div>
             </div>
             {!warningCollapsed && (
-              <p style={{ marginTop: '8px', fontSize: '12px', lineHeight: '1.45', margin: '8px 0 0 0' }}>
-                Running local WebGPU engines inside mobile browsers is resource-intensive and may trigger memory-limit page crashes (tab reload). For a smooth co-writing experience on mobile devices, connect via remote Ollama endpoints or cloud models.
-              </p>
+              <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <p style={{ fontSize: '12px', lineHeight: '1.45', margin: 0 }}>
+                  Running local AI models directly in mobile browsers is extremely resource-intensive. It can lead to low battery, slow performance, or sudden browser tab crashes (reloads) due to tight mobile memory limits.
+                </p>
+                <p style={{ fontSize: '11px', fontWeight: 'bold', margin: '2px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  💻 We highly recommend using a PC/Desktop computer for this app if it runs slow or crashes.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', width: '100%' }}>
+                  <button 
+                    className="warning-action-btn primary-warning" 
+                    onClick={() => setShowWebgpuHelpModal(true)}
+                  >
+                    <Monitor size={12} /> Learn More & Use on PC
+                  </button>
+                  <button 
+                    className="warning-action-btn secondary-warning" 
+                    onClick={handleClearCache}
+                    disabled={isClearing}
+                  >
+                    <Trash2 size={12} /> {isClearing ? 'Clearing Storage...' : `Clear Cache & Memory ${cacheSizeMB ? `(${cacheSizeMB} MB)` : ''}`}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -1796,6 +1856,89 @@ Response: Certainly, I will delete the outdated paragraph.
                 ⚠️ Note: Set environment variable <code>OLLAMA_ORIGINS="*"</code> to allow browser web apps to connect.
               </span>
               <button className="btn-close-modal" onClick={() => setShowInstallModal(false)}>Close Assistant</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Glassmorphic WebGPU Help Modal */}
+      {showWebgpuHelpModal && (
+        <div className="install-modal-backdrop" onClick={() => setShowWebgpuHelpModal(false)}>
+          <div className="install-modal-card" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="install-modal-header">
+              <Monitor className="install-modal-icon" size={20} />
+              <h3>WebGPU Mobile Optimization & PC Setup</h3>
+              <button className="install-modal-close" onClick={() => setShowWebgpuHelpModal(false)}>×</button>
+            </div>
+            
+            <div className="install-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <p className="install-intro-text" style={{ fontSize: '13px', lineHeight: '1.5' }}>
+                Running local AI models directly in your browser is a breakthrough, but mobile devices face strict operating system limits.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ background: 'rgba(0,0,0,0.03)', padding: '10px 14px', borderRadius: '8px', borderLeft: '3px solid var(--word-blue)' }}>
+                  <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Info size={14} style={{ color: 'var(--word-blue)' }} /> Why does my mobile browser reload/crash?
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.45' }}>
+                    WebGPU models (Gemma 2B, Llama 1B) must load <strong>1.2 GB to 2.2 GB</strong> of weights into browser RAM. Phones generally restrict a single tab to <strong>512 MB - 1 GB</strong> of RAM, causing the operating system to force-reload the tab to prevent phone freezes.
+                  </p>
+                </div>
+
+                <div style={{ background: 'rgba(0,0,0,0.03)', padding: '10px 14px', borderRadius: '8px', borderLeft: '3px solid var(--brand-500)' }}>
+                  <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Monitor size={14} style={{ color: 'var(--brand-500)' }} /> Use on PC for the Best Experience
+                  </h4>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.45' }}>
+                    PC browsers have higher memory limits, access to dedicated GPU cards, and don't suffer tab crashes from LLMs. Open OpenWord on your computer to run WebGPU seamlessly.
+                  </p>
+                  
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--bg-sheet)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flexGrow: 1, color: 'var(--text-muted)' }}>
+                      https://rorrimaesu.github.io/OpenWord/
+                    </span>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText('https://rorrimaesu.github.io/OpenWord/');
+                        setCopiedUrl(true);
+                        setTimeout(() => setCopiedUrl(false), 2000);
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: copiedUrl ? '#10b981' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                      title="Copy URL"
+                    >
+                      {copiedUrl ? <Check size={14} /> : <Copy size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(0,0,0,0.03)', padding: '10px 14px', borderRadius: '8px', borderLeft: '3px solid #10b981' }}>
+                  <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    ⚡ Phone Alternative: Remote Connect
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.45' }}>
+                    If you want offline AI on your phone without crashes, you can run Ollama on your PC and connect your phone over your local home network (using your PC's local IP address as the Ollama endpoint).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="install-modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button 
+                className="btn-close-modal" 
+                onClick={() => setShowWebgpuHelpModal(false)}
+                style={{ margin: 0, padding: '8px 16px', fontSize: '12px' }}
+              >
+                Close Instructions
+              </button>
             </div>
           </div>
         </div>
