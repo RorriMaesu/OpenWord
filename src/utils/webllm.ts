@@ -159,12 +159,25 @@ export async function loadWebGPUEngine(
     };
   }
 
+  // Detect mobile / tablet device to apply low-memory settings
+  const isMobile = typeof navigator !== 'undefined' && 
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  const chatOpts: any = {};
+  if (isMobile) {
+    // Crucial: reduce context window size on mobile to dramatically reduce KV cache allocation.
+    // Default context window for Gemma 4 is often 4096 or 8192, which consumes 400MB-1GB of extra VRAM buffers.
+    // Limiting it to 1024 prevents OOM crashes on memory-constrained mobile OS tabs.
+    chatOpts.context_window_size = 1024;
+    chatOpts.sliding_window_size = 512;
+  }
+
   activeEngine = await CreateMLCEngine(modelId, {
     initProgressCallback: (progress) => {
       onProgress(progress.text, progress.progress || 0);
     },
     ...engineConfig
-  });
+  }, chatOpts);
   
   activeModelId = modelId;
   return activeEngine;
