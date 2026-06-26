@@ -51,7 +51,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [isChecking, setIsChecking] = useState<boolean>(true);
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>(() => {
-    return localStorage.getItem('openword_copilot_ollama_model') || 'gemma4:2b';
+    return localStorage.getItem('openword_copilot_ollama_model') || 'gemma4:e2b';
   });
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
 
@@ -286,7 +286,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
               setSelectedModel(modelList[0]);
             }
           } else {
-            setSelectedModel(hardware?.recommendedModel || 'gemma4:2b');
+            setSelectedModel(hardware?.recommendedModel || 'gemma4:e2b');
           }
         }
       }
@@ -1087,7 +1087,7 @@ Response: Certainly, I will delete the outdated paragraph.
                   onChange={(e) => setSelectedModel(e.target.value)}
                 >
                   {models.map(m => <option key={m} value={m}>{m}</option>)}
-                  {models.length === 0 && <option value="gemma4:2b">gemma4:2b</option>}
+                  {models.length === 0 && <option value="gemma4:e2b">gemma4:e2b</option>}
                 </select>
                 <button 
                   className={`copilot-download-toggle-btn ${showDownloader ? 'active' : ''}`}
@@ -1313,11 +1313,15 @@ Response: Certainly, I will delete the outdated paragraph.
                 className="downloader-select"
                 disabled={isPulling}
               >
-                <option value="gemma2:2b">Gemma 2 2B (2.0 GB - Recommended for integrated GPUs)</option>
+                <option value="gemma4:e2b">Gemma 4 E2B (1.6 GB - Ultra lightweight for Edge/IoT)</option>
+                <option value="gemma4:e4b">Gemma 4 E4B (2.8 GB - Optimized Edge with audio/vision)</option>
+                <option value="gemma4:12b">Gemma 4 12B (8.0 GB - Standard dense model for desktops)</option>
+                <option value="gemma4:26b">Gemma 4 26B (16.0 GB - Mixture of Experts, fast inference)</option>
+                <option value="gemma4:31b">Gemma 4 31B (20.0 GB - Dense model for premium GPUs)</option>
+                <option value="gemma2:2b">Gemma 2 2B (2.0 GB - Older lightweight model)</option>
                 <option value="llama3.2:3b">Llama 3.2 3B (2.0 GB - Excellent general writer)</option>
                 <option value="llama3.2:1b">Llama 3.2 1B (1.3 GB - Ultra lightweight)</option>
                 <option value="qwen2.5-coder:7b">Qwen 2.5 Coder 7B (4.7 GB - Best for editing)</option>
-                <option value="gemma2:9b">Gemma 2 9B (5.5 GB - Smart, needs GPU)</option>
                 <option value="custom">Custom model tag...</option>
               </select>
             </div>

@@ -137,8 +137,8 @@ export function detectHardware(): HardwareProfile {
   }
 
   // Model size recommendations based on estimated VRAM capacity
-  let recommendedModel = 'gemma4:2b';
-  let reason = '';
+  let recommendedModel: string;
+  let reason: string;
 
   if (estimatedVramGb >= 20) {
     recommendedModel = 'gemma4:31b';
@@ -147,14 +147,14 @@ export function detectHardware(): HardwareProfile {
     recommendedModel = 'gemma4:26b'; // Mixture of Experts (MoE)
     reason = `Detected mid-to-high GPU (${gpuName}) with ~${estimatedVramGb}GB VRAM. Gemma 4 26B (Mixture of Experts) is recommended for efficient performance.`;
   } else if (estimatedVramGb >= 8) {
-    recommendedModel = 'gemma4:9b';
-    reason = `Detected mid-range GPU (${gpuName}) with ~${estimatedVramGb}GB VRAM. Gemma 4 9B is recommended for a balanced speed-to-intelligence ratio.`;
+    recommendedModel = 'gemma4:12b';
+    reason = `Detected mid-range GPU (${gpuName}) with ~${estimatedVramGb}GB VRAM. Gemma 4 12B is recommended for a balanced speed-to-intelligence ratio.`;
   } else if (estimatedVramGb >= 6) {
-    recommendedModel = 'gemma4:4b';
-    reason = `Detected dedicated GPU (${gpuName}) with ~${estimatedVramGb}GB VRAM. Gemma 4 4B (Effective) is recommended for low-latency offline execution.`;
+    recommendedModel = 'gemma4:e4b';
+    reason = `Detected dedicated GPU (${gpuName}) with ~${estimatedVramGb}GB VRAM. Gemma 4 E4B (Effective 4B) is recommended for low-latency offline execution.`;
   } else {
-    recommendedModel = 'gemma4:2b';
-    reason = `Detected integrated or limited hardware (${gpuName}) with ~${estimatedVramGb}GB VRAM. Lightweight Gemma 4 2B is recommended to prevent system slowdown.`;
+    recommendedModel = 'gemma4:e2b';
+    reason = `Detected integrated or limited hardware (${gpuName}) with ~${estimatedVramGb}GB VRAM. Lightweight Gemma 4 E2B is recommended to prevent system slowdown.`;
   }
 
   return {
