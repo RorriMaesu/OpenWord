@@ -5186,5 +5186,24 @@ mark {
     padding: 8px 12px;
     font-size: 13.5px;
   }
+
+  /* Warning close button */
+  .warning-close-btn {
+    background: transparent;
+    border: none;
+    color: HSL(35, 90%, 40%);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    width: 28px;
+    height: 28px;
+  }
+  .warning-close-btn:active {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
 }
 

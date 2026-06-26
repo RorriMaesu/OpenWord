@@ -91,6 +91,9 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     const saved = localStorage.getItem('openword_copilot_show_hw_tip');
     return saved !== null ? saved === 'true' : true;
   });
+  const [showMobileWarning, setShowMobileWarning] = useState<boolean>(() => {
+    return localStorage.getItem('openword_copilot_hide_mobile_warning') !== 'true';
+  });
   const [detectedOS, setDetectedOS] = useState<OSDetails | null>(null);
   const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
   const [selectedOS, setSelectedOS] = useState<'Windows' | 'macOS' | 'Linux'>('Windows');
@@ -1097,11 +1100,23 @@ Response: Certainly, I will delete the outdated paragraph.
       )}
 
       {/* Mobile WebGPU memory warning card */}
-      {modelMode === 'webgpu' && isMobile && isWebGPUAvailable && (
+      {modelMode === 'webgpu' && isMobile && isWebGPUAvailable && showMobileWarning && (
         <div className="copilot-connection-alert webgpu-mobile-warning">
           <AlertCircle className="alert-icon" size={18} />
           <div className="alert-body">
-            <h4>Mobile Browser Warning</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '4px' }}>
+              <h4 style={{ margin: 0 }}>Mobile Browser Warning</h4>
+              <button 
+                onClick={() => {
+                  setShowMobileWarning(false);
+                  localStorage.setItem('openword_copilot_hide_mobile_warning', 'true');
+                }} 
+                className="warning-close-btn"
+                title="Dismiss Warning"
+              >
+                <X size={14} />
+              </button>
+            </div>
             <p>
               Running local WebGPU engines inside mobile browsers is resource-intensive and may trigger memory-limit page crashes (tab reload). For a smooth co-writing experience on mobile devices, connect via remote Ollama endpoints or cloud models.
             </p>
