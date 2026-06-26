@@ -5032,5 +5032,159 @@ mark {
     justify-content: center;
     margin: 0;
   }
+
+  /* OpenWord AI Mobile Layout & Touch Enhancements */
+  .mobile-drawer .copilot-status-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .mobile-drawer .status-indicator-wrapper {
+    width: 100%;
+    justify-content: space-between;
+    font-size: 12px;
+    height: 38px;
+  }
+  .mobile-drawer .copilot-mode-select {
+    flex-grow: 1;
+    max-width: none !important;
+    height: 38px !important;
+    font-size: 13.5px;
+    border-radius: 6px;
+    background-color: var(--bg-sheet);
+    border: 1px solid var(--border-color);
+  }
+  .mobile-drawer .status-model-row {
+    width: 100%;
+    gap: 8px;
+    height: 38px !important;
+  }
+  .mobile-drawer .copilot-model-select {
+    flex-grow: 1;
+    max-width: none !important;
+    height: 38px !important;
+    font-size: 13.5px;
+    border-radius: 6px;
+    background-color: var(--bg-sheet);
+    border: 1px solid var(--border-color);
+  }
+  .mobile-drawer .copilot-download-toggle-btn,
+  .mobile-drawer .copilot-clear-chat-btn,
+  .mobile-drawer .copilot-refresh-btn,
+  .mobile-drawer .webgpu-action-btn {
+    height: 38px !important;
+    width: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* AI Panel Tab Segmented Bar */
+  .mobile-drawer .copilot-panel-tabs {
+    height: 42px;
+    margin: 8px 12px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 6px;
+    padding: 3px;
+    gap: 4px;
+  }
+  .mobile-drawer .copilot-panel-tab {
+    font-size: 13px;
+    font-weight: 600;
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  /* Inference parameters panel updates */
+  .mobile-drawer .control-toggle-switch {
+    height: 44px !important;
+    width: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .mobile-drawer .control-row {
+    gap: 12px;
+    padding: 6px 0;
+  }
+  .mobile-drawer .control-slider {
+    flex-grow: 1;
+    margin: 0 4px;
+  }
+
+  /* Model downloader fields */
+  .mobile-drawer .model-downloader-card {
+    margin: 8px 12px;
+    padding: 12px;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+  .mobile-drawer .downloader-select,
+  .mobile-drawer .downloader-text-input {
+    height: 40px !important;
+    font-size: 14px !important;
+    border-radius: 6px !important;
+    box-sizing: border-box;
+    padding: 0 10px !important;
+    width: 100% !important;
+  }
+  .mobile-drawer .downloader-actions button,
+  .mobile-drawer .btn-downloader-cancel,
+  .mobile-drawer .btn-downloader-start {
+    width: 100% !important;
+    height: 40px !important;
+    font-size: 13.5px !important;
+    border-radius: 6px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Visual diff plan cards */
+  .mobile-drawer .diff-card {
+    margin: 8px 12px;
+    padding: 12px;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+  .mobile-drawer .diff-card-header h4 {
+    font-size: 13.5px;
+  }
+  .mobile-drawer .diff-visualizer {
+    font-size: 13px;
+  }
+  .mobile-drawer .diff-block-removed,
+  .mobile-drawer .diff-block-added {
+    padding: 6px 10px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .mobile-drawer .diff-card-actions {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .mobile-drawer .btn-diff-action {
+    height: 40px !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobile-drawer .chat-bubble-row {
+    max-width: 94%;
+    gap: 6px;
+  }
+  .mobile-drawer .bubble-text {
+    padding: 8px 12px;
+    font-size: 13.5px;
+  }
 }
 
