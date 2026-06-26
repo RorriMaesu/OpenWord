@@ -4092,12 +4092,16 @@ mark {
     height: 100vh;
     height: 100dvh;
     height: var(--app-height, 100dvh);
-    grid-template-rows: 48px minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    padding-top: 48px; /* spacer for the fixed header */
   }
 
-  /* Mobile titlebar */
+  /* Mobile titlebar — pinned to viewport top so it can never scroll off-screen */
   .word-titlebar.mobile-header {
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
     height: 48px;
     padding: 0 12px;
@@ -4187,6 +4191,7 @@ mark {
     max-width: 100% !important;
     height: calc(100vh - 48px);
     height: calc(100dvh - 48px);
+    height: calc(var(--app-height, 100dvh) - 48px);
     z-index: 999;
     border-left: none;
     border-top: 1px solid var(--border-color);
