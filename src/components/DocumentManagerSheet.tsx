@@ -12,13 +12,15 @@ interface DocumentManagerSheetProps {
   onClose: () => void;
   onOpenHeaderFooter: () => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
+  onCloseSidebar?: () => void;
 }
 
 export const DocumentManagerSheet: React.FC<DocumentManagerSheetProps> = ({
   isOpen,
   onClose,
   onOpenHeaderFooter,
-  fileInputRef
+  fileInputRef,
+  onCloseSidebar
 }) => {
   const {
     docState,
@@ -69,6 +71,9 @@ export const DocumentManagerSheet: React.FC<DocumentManagerSheetProps> = ({
   const handleOpenDoc = async (id: string) => {
     await openDocumentById(id);
     onClose();
+    if (onCloseSidebar) {
+      onCloseSidebar();
+    }
   };
 
   const handleDeleteDoc = async (e: React.MouseEvent, id: string, title: string) => {
@@ -106,6 +111,9 @@ export const DocumentManagerSheet: React.FC<DocumentManagerSheetProps> = ({
   const handleCreateNew = () => {
     createNewDocument();
     onClose();
+    if (onCloseSidebar) {
+      onCloseSidebar();
+    }
   };
 
   const handleImportClick = () => {

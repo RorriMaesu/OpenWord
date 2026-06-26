@@ -239,6 +239,10 @@ const AppContent: React.FC = () => {
         
         editor?.commands.setContent(html);
       }
+
+      if (isMobile) {
+        setShowSidebar(false);
+      }
     } catch (err) {
       console.error('Failed to import file on mobile:', err);
     }
@@ -590,6 +594,7 @@ const AppContent: React.FC = () => {
           onClose={() => setShowDocManager(false)}
           onOpenHeaderFooter={() => setShowHeaderFooter(true)}
           fileInputRef={fileInputRef}
+          onCloseSidebar={() => setShowSidebar(false)}
         />
       )}
     </div>
