@@ -70,6 +70,26 @@ const AppContent: React.FC = () => {
   // Autosave Recovery dialog visibility
   const [showRecoveryAlert, setShowRecoveryAlert] = useState(false);
 
+  // Mobile Save Status Toast
+  const [statusToast, setStatusToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!statusToast) return;
+    const timer = setTimeout(() => {
+      setStatusToast(null);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [statusToast]);
+
+  const triggerStatusToast = () => {
+    const msg = isSaving 
+      ? 'Autosaving changes to device...' 
+      : isDirty 
+        ? 'Unsaved changes locally' 
+        : 'All changes saved to device';
+    setStatusToast(msg);
+  };
+
 
   // Sync theme from localStorage on startup
   useEffect(() => {
@@ -278,7 +298,12 @@ const AppContent: React.FC = () => {
                 onChange={(e) => updateTitle(e.target.value)}
                 placeholder="Untitled Document"
               />
-              <div className={`mobile-cloud-status ${isSaving ? 'saving' : ''}`} title={isSaving ? 'Autosaving...' : isDirty ? 'Unsaved edits' : 'Saved to device'}>
+              <div 
+                className={`mobile-cloud-status ${isSaving ? 'saving' : ''}`} 
+                title={isSaving ? 'Autosaving...' : isDirty ? 'Unsaved edits' : 'Saved to device'}
+                onClick={triggerStatusToast}
+                style={{ cursor: 'pointer' }}
+              >
                 {isSaving ? (
                   <RefreshCw size={12} className="spin-icon" />
                 ) : isDirty ? (
@@ -521,6 +546,13 @@ const AppContent: React.FC = () => {
         onClose={() => setIsTourOpen(false)}
         setSidebarTab={setSidebarTab}
       />
+
+      {/* Floating Status Toast Pill */}
+      {statusToast && (
+        <div className="status-toast no-print">
+          {statusToast}
+        </div>
+      )}
     </div>
   );
 };

@@ -4977,5 +4977,60 @@ mark {
     justify-content: center;
     font-size: 14.5px;
   }
+
+  /* Glassmorphic saving status toast pill */
+  .status-toast {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 2000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    animation: toastFadeInOut 2s ease-in-out forwards;
+  }
+
+  @keyframes toastFadeInOut {
+    0% { opacity: 0; transform: translate(-50%, -10px); }
+    15% { opacity: 1; transform: translate(-50%, 0); }
+    85% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -10px); }
+  }
+
+  /* Flexible title input and container width overrides */
+  .mobile-header .titlebar-filename-input {
+    width: auto !important;
+    max-width: 170px !important;
+    flex-grow: 1;
+    text-align: left !important;
+  }
+  .mobile-title-container {
+    flex-grow: 1;
+    justify-content: flex-start !important;
+    max-width: 210px !important;
+  }
+
+  /* Search pane input and button touch safety overrides */
+  .mobile-drawer .search-pane .form-group input {
+    height: 42px;
+    font-size: 13.5px;
+    padding: 8px 12px;
+  }
+  .mobile-drawer .search-pane .btn-outline-action {
+    height: 42px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+  }
 }
 

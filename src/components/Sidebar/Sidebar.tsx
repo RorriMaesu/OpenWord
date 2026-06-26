@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDocument } from '../../context/DocumentContext';
 import { Search, Compass, Info, ChevronRight, FileText, Clock, CheckCircle, Database, Sparkles, Coffee, X } from 'lucide-react';
 import { Editor } from '@tiptap/react';
@@ -27,6 +27,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { isSaving, isDirty } = useDocument();
   const isMobile = useIsMobile();
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [touchStartX, setTouchStartX] = useState(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const diffX = touchEndX - touchStartX;
+
+    // Swipe right to close sidebar
+    if (diffX > 80 && isMobile && onClose) {
+      onClose();
+    }
+  };
+
+  // Shrink height of sidebar dynamically to fit above virtual keyboard
+  useEffect(() => {
+    if (!isMobile || !isOpen) return;
+
+    const handleViewportChange = () => {
+      const vv = window.visualViewport;
+      if (vv && containerRef.current) {
+        const offsetBottom = window.innerHeight - vv.height - vv.offsetTop;
+        const newHeight = vv.height - 48; // Subtract header (48px)
+        containerRef.current.style.height = `${Math.max(200, newHeight)}px`;
+        containerRef.current.style.bottom = `${Math.max(0, offsetBottom)}px`;
+      }
+    };
+
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener('resize', handleViewportChange);
+      vv.addEventListener('scroll', handleViewportChange);
+      handleViewportChange();
+    }
+
+    return () => {
+      if (vv) {
+        vv.removeEventListener('resize', handleViewportChange);
+        vv.removeEventListener('scroll', handleViewportChange);
+      }
+    };
+  }, [isMobile, isOpen]);
   
   const [localTab, setLocalTab] = useState<'outline' | 'search' | 'properties' | 'copilot'>(() => {
     const saved = localStorage.getItem('openword_sidebar_tab');
@@ -233,8 +279,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="mobile-sidebar-backdrop" onClick={onClose} />
       )}
       <div 
+        ref={containerRef}
         className={`sidebar-container ${isMobile ? 'mobile-drawer' : ''}`}
         style={isMobile ? {} : { width: `${width}px` }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Draggable Resizer Handle - Hidden on Mobile */}
         {!isMobile && (

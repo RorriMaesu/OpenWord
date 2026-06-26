@@ -46,6 +46,36 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [activeSheetTab, setActiveSheetTab] = useState<'text' | 'paragraph' | 'layout' | 'insert'>('text');
 
+  const [touchStartX, setTouchStartX] = useState(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Only track swipe if it's on sheet body (not inside a scrollable dropdown or horizontal swatch grid)
+    const target = e.target as HTMLElement;
+    if (target.closest('.color-swatch-grid') || target.closest('select')) return;
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartX) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diffX = touchEndX - touchStartX;
+    setTouchStartX(0); // Reset
+
+    // Swipe threshold of 60px
+    if (Math.abs(diffX) > 60) {
+      const tabs: ('text' | 'paragraph' | 'layout' | 'insert')[] = ['text', 'paragraph', 'layout', 'insert'];
+      const currentIndex = tabs.indexOf(activeSheetTab);
+
+      if (diffX > 0 && currentIndex > 0) {
+        // Swipe right -> select previous tab
+        setActiveSheetTab(tabs[currentIndex - 1]);
+      } else if (diffX < 0 && currentIndex < tabs.length - 1) {
+        // Swipe left -> select next tab
+        setActiveSheetTab(tabs[currentIndex + 1]);
+      }
+    }
+  };
+
   const {
     docState,
     updateMargins,
@@ -350,7 +380,12 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
       {/* 3. Expandable Bottom Sheet Panel */}
       {isBottomSheetOpen && (
         <div className="mobile-formatter-sheet-backdrop" onClick={() => setIsBottomSheetOpen(false)}>
-          <div className="mobile-formatter-sheet" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="mobile-formatter-sheet" 
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <div className="sheet-header">
               <span className="sheet-title">
                 Format Options
@@ -422,7 +457,33 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                       >
                         <Minus size={14} />
                       </button>
-                      <span className="size-indicator">{getActiveFontSize()}px</span>
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <span className="size-indicator">{getActiveFontSize()}px</span>
+                        <select 
+                          value={getActiveFontSize()}
+                          onChange={(e) => {
+                            const size = parseInt(e.target.value, 10);
+                            if (!isNaN(size)) {
+                              editor.chain().focus().setFontSize(`${size}px`).run();
+                            }
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            opacity: 0,
+                            cursor: 'pointer',
+                            appearance: 'none',
+                            WebkitAppearance: 'none'
+                          }}
+                        >
+                          {[8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72].map(size => (
+                            <option key={size} value={size}>{size}px</option>
+                          ))}
+                        </select>
+                      </div>
                       <button 
                         onClick={() => handleFontSizeChange(1)}
                         className="size-btn"
