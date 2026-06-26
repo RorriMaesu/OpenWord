@@ -97,6 +97,39 @@ const AppContent: React.FC = () => {
     document.body.parentElement?.setAttribute('data-theme', savedTheme);
   }, []);
 
+  // Sync app height with visual viewport to prevent virtual keyboard from scrolling the header/menu off-screen
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const handleViewportChange = () => {
+      const vv = window.visualViewport;
+      const appShell = document.querySelector('.app-shell') as HTMLElement;
+      if (vv && appShell) {
+        appShell.style.height = `${vv.height}px`;
+        // Scroll layout viewport back to top to keep header pinned at the top
+        window.scrollTo(0, 0);
+      }
+    };
+
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener('resize', handleViewportChange);
+      vv.addEventListener('scroll', handleViewportChange);
+      handleViewportChange();
+    }
+
+    return () => {
+      if (vv) {
+        vv.removeEventListener('resize', handleViewportChange);
+        vv.removeEventListener('scroll', handleViewportChange);
+      }
+      const appShell = document.querySelector('.app-shell') as HTMLElement;
+      if (appShell) {
+        appShell.style.height = '';
+      }
+    };
+  }, [isMobile]);
+
   // Sync layout mode to localStorage & DocumentContext
   useEffect(() => {
     localStorage.setItem('openword_layout_mode', layoutMode);
