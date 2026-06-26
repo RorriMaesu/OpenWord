@@ -68,14 +68,13 @@ export function getAvailableEdgeModels(): EdgeModel[] {
     }
   ];
 
-  // Exclusion prefixes — block old Gemma 2/1 duplicates and oversized models
-  // from polluting the dropdown. WebLLM v0.2.84 ships ~13 Gemma 2 variants
-  // (q4f32, -1k context, jpn locale, etc.) that all match broad keywords.
   const excludedPrefixes = [
     'gemma-2-',    // All Gemma 2 variants (already represented by our curated entry)
     'gemma-2b',    // Gemma 1 2B variants (e.g. gemma-2b-it-q4f32_1-MLC)
     'gemma-2-9b',  // Gemma 2 9B — too large for edge
     'gemma-2-27b', // Gemma 2 27B — far too large
+    'gemma-4-e2b', // Exclude MLC Gemma 4 E2B (we use the optimized LiteRT version)
+    'gemma-4-e4b', // Exclude MLC Gemma 4 E4B
   ];
 
   try {
