@@ -261,7 +261,7 @@ const AppContent: React.FC = () => {
                 padding: '6px',
                 borderRadius: '8px',
                 color: 'var(--text-muted)',
-                marginRight: '8px',
+                marginRight: '4px',
                 transition: 'background-color 0.2s',
                 textDecoration: 'none'
               }}
@@ -270,19 +270,6 @@ const AppContent: React.FC = () => {
             >
               <ArrowLeft size={16} />
             </a>
-            <div className="app-brand-logo" onClick={createNewDocument} title="New Document">
-              <svg viewBox="0 0 24 24" className="app-logo-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#0078d4" />
-                    <stop offset="100%" stopColor="#00b4fc" />
-                  </linearGradient>
-                </defs>
-                <path d="M16 2H8C5.79086 2 4 3.79086 4 6V18C4 20.2091 5.79086 22 8 22H16C18.2091 22 20 20.2091 20 18V6C20 3.79086 18.2091 2 16 2Z" fill="url(#logo-grad)" />
-                <circle cx="12" cy="12" r="5" stroke="white" strokeWidth="1.8" strokeDasharray="24 6" strokeLinecap="round" />
-                <path d="M9.5 10L11 14L12 12L13 14L14.5 10" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
             <select
               className="mobile-file-menu-select"
               value=""
@@ -316,13 +303,29 @@ const AppContent: React.FC = () => {
 
           <div className="titlebar-center">
             <div className="mobile-title-container">
-              <input
-                type="text"
-                className="titlebar-filename-input"
-                value={docState.title}
-                onChange={(e) => updateTitle(e.target.value)}
-                placeholder="Untitled Document"
-              />
+              <div 
+                className="mobile-title-clickable"
+                onClick={() => {
+                  const newTitle = prompt('Rename Document:', docState.title);
+                  if (newTitle !== null && newTitle.trim() !== '') {
+                    updateTitle(newTitle.trim());
+                  }
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', maxWidth: '120px', minWidth: '40px' }}
+                title="Tap to rename"
+              >
+                <span className="mobile-title-text" style={{ 
+                  fontSize: '13px', 
+                  fontWeight: '600', 
+                  color: 'white', 
+                  overflow: 'hidden', 
+                  textOverflow: 'ellipsis', 
+                  whiteSpace: 'nowrap',
+                  maxWidth: '85px'
+                }}>
+                  {docState.title || 'Untitled'}
+                </span>
+              </div>
               <div 
                 className={`mobile-cloud-status ${isSaving ? 'saving' : ''}`} 
                 title={isSaving ? 'Autosaving...' : isDirty ? 'Unsaved edits' : 'Saved to device'}
@@ -343,20 +346,6 @@ const AppContent: React.FC = () => {
           <div className="titlebar-right mobile-header-actions">
             <button
               onClick={() => {
-                if (showSidebar && sidebarTab === 'search') {
-                  setShowSidebar(false);
-                } else {
-                  setSidebarTab('search');
-                  setShowSidebar(true);
-                }
-              }}
-              className={`titlebar-icon-btn ${showSidebar && sidebarTab === 'search' ? 'active' : ''}`}
-              title="Find & Replace"
-            >
-              <Search size={16} />
-            </button>
-            <button
-              onClick={() => {
                 if (showSidebar && sidebarTab === 'copilot') {
                   setShowSidebar(false);
                 } else {
@@ -371,13 +360,14 @@ const AppContent: React.FC = () => {
             </button>
             <button
               onClick={() => {
-                if (showSidebar) {
+                if (showSidebar && sidebarTab === 'outline') {
                   setShowSidebar(false);
                 } else {
+                  setSidebarTab('outline');
                   setShowSidebar(true);
                 }
               }}
-              className={`titlebar-icon-btn ${showSidebar && sidebarTab !== 'search' && sidebarTab !== 'copilot' ? 'active' : ''}`}
+              className={`titlebar-icon-btn ${showSidebar && sidebarTab === 'outline' ? 'active' : ''}`}
               title="Menu"
             >
               <Menu size={16} />
