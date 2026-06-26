@@ -5959,6 +5959,34 @@ mark {
   background: #9333ea;
 }
 
+/* Mobile Pomodoro Timer & Metrics UI Optimization */
+@media (max-width: 768px) {
+  /* Hide the Study Metrics button on mobile viewports */
+  #floating-stats-btn-container {
+    display: none !important;
+  }
+  
+  /* Reposition the Pomodoro Timer floating widget to bottom-right above the formatting toolbar */
+  #floating-timer-widget {
+    bottom: 76px !important;
+    right: 16px !important;
+    left: auto !important;
+    flex-direction: column-reverse !important;
+    align-items: flex-end !important;
+  }
+  
+  /* Align the expanded Pomodoro settings panel above the button */
+  #timer-expanded-panel {
+    position: fixed !important;
+    bottom: 140px !important;
+    right: 16px !important;
+    left: auto !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 320px !important;
+    z-index: 260 !important;
+  }
+}
+
 
 
 
