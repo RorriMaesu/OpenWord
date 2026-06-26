@@ -4153,19 +4153,24 @@ mark {
   .mobile-header .titlebar-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 2px;
+    flex-shrink: 0;
   }
   
   .mobile-header .titlebar-icon-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
     border: none;
-    color: white;
+    color: rgba(255, 255, 255, 0.85);
     border-radius: 6px;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .mobile-header .titlebar-icon-btn:active {
+    background: rgba(255, 255, 255, 0.15);
   }
   .mobile-header .titlebar-icon-btn.active {
     background: rgba(255, 255, 255, 0.2);

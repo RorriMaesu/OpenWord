@@ -6,7 +6,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { HeaderFooterManager } from './components/Editor/HeaderFooterManager';
 import { Editor as TiptapEditor } from '@tiptap/react';
-import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles, ArrowLeft, Check, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles, ArrowLeft, Check, RefreshCw, Menu } from 'lucide-react';
 import { getDocument, deleteDocument } from './utils/db';
 import './App.css';
 import { TutorialTour } from './components/Tutorial/TutorialTour';
@@ -340,7 +340,21 @@ const AppContent: React.FC = () => {
             </div>
           </div>
 
-          <div className="titlebar-right">
+          <div className="titlebar-right mobile-header-actions">
+            <button
+              onClick={() => {
+                if (showSidebar && sidebarTab === 'search') {
+                  setShowSidebar(false);
+                } else {
+                  setSidebarTab('search');
+                  setShowSidebar(true);
+                }
+              }}
+              className={`titlebar-icon-btn ${showSidebar && sidebarTab === 'search' ? 'active' : ''}`}
+              title="Find & Replace"
+            >
+              <Search size={16} />
+            </button>
             <button
               onClick={() => {
                 if (showSidebar && sidebarTab === 'copilot') {
@@ -354,6 +368,19 @@ const AppContent: React.FC = () => {
               title="AI Copilot"
             >
               <Sparkles size={16} />
+            </button>
+            <button
+              onClick={() => {
+                if (showSidebar) {
+                  setShowSidebar(false);
+                } else {
+                  setShowSidebar(true);
+                }
+              }}
+              className={`titlebar-icon-btn ${showSidebar && sidebarTab !== 'search' && sidebarTab !== 'copilot' ? 'active' : ''}`}
+              title="Menu"
+            >
+              <Menu size={16} />
             </button>
           </div>
         </div>
