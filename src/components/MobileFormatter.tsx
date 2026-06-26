@@ -123,17 +123,34 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
     };
   }, []);
 
+  const savedSelectionRef = useRef<{ from: number; to: number } | null>(null);
+
   if (!editor) return null;
 
   const runCommand = (command: (chain: any) => any) => {
     if (!editor) return;
-    command(editor.chain().focus()).run();
+    
+    let chain = editor.chain();
+    if (isBottomSheetOpen && savedSelectionRef.current) {
+      chain = chain.setTextSelection(savedSelectionRef.current);
+    }
+    
+    command(chain.focus()).run();
 
     // Refocus after the browser's touch/mouse event loop finishes 
     // to override any focus shift caused by the user releasing the button.
     setTimeout(() => {
-      if (editor && !editor.isFocused) {
-        editor.commands.focus();
+      if (editor) {
+        if (!editor.isFocused) {
+          editor.commands.focus();
+        }
+        if (isBottomSheetOpen) {
+          // Keep saved selection in sync in case of successive commands
+          savedSelectionRef.current = {
+            from: editor.state.selection.from,
+            to: editor.state.selection.to
+          };
+        }
       }
     }, 20);
   };
@@ -292,8 +309,14 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
         const nextState = !isBottomSheetOpen;
         setIsBottomSheetOpen(nextState);
         if (nextState) {
+          savedSelectionRef.current = {
+            from: editor.state.selection.from,
+            to: editor.state.selection.to
+          };
           (document.activeElement as HTMLElement)?.blur();
           setActiveQuickTool(null);
+        } else {
+          savedSelectionRef.current = null;
         }
         break;
       case 'toggle-text-color':
@@ -322,6 +345,11 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
     const handleInteraction = (e: Event) => {
       const button = (e.target as HTMLElement).closest('[data-command]');
       if (button && containerRef.current?.contains(button)) {
+        const isSwatch = button.classList.contains('quick-color-swatch') || button.classList.contains('quick-color-clear-btn');
+        if (e.type === 'touchstart' && isSwatch) {
+          return;
+        }
+
         e.preventDefault();
         const command = button.getAttribute('data-command');
         if (command) {
@@ -600,7 +628,7 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
       {/* 3. Expandable Bottom Sheet Panel */}
       {isBottomSheetOpen && (
-        <div className="mobile-formatter-sheet-backdrop" onClick={() => setIsBottomSheetOpen(false)}>
+        <div className="mobile-formatter-sheet-backdrop" onClick={() => { setIsBottomSheetOpen(false); savedSelectionRef.current = null; }}>
           <div 
             className="mobile-formatter-sheet" 
             onClick={(e) => e.stopPropagation()}
@@ -612,7 +640,7 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                 Format Options
                 <span className="sheet-header-badge">{getWordCount()} words</span>
               </span>
-              <button className="sheet-close-btn" onClick={() => setIsBottomSheetOpen(false)}>
+              <button className="sheet-close-btn" onClick={() => { setIsBottomSheetOpen(false); savedSelectionRef.current = null; }}>
                 <X size={18} />
               </button>
             </div>
