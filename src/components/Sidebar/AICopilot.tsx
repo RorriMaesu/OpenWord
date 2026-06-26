@@ -3,7 +3,7 @@ import { Editor } from '@tiptap/react';
 import { 
   Sparkles, Send, Bot, User, Settings, RefreshCw, Cpu, 
   CornerDownLeft, FileText, Clipboard, AlertCircle, ToggleLeft, ToggleRight,
-  Download, X, Trash2
+  Download, X, Trash2, ChevronDown
 } from 'lucide-react';
 import { 
   checkOllamaStatus, launchLocalOllama, fetchLocalModels, 
@@ -67,7 +67,15 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   // WebGPU states
   const [modelMode, setModelMode] = useState<'ollama' | 'webgpu'>(() => {
     const saved = localStorage.getItem('openword_copilot_mode');
-    return (saved as 'ollama' | 'webgpu') || 'ollama';
+    if (saved) return saved as 'ollama' | 'webgpu';
+    // Mobile users can't run Ollama locally — default to WebGPU
+    const isMobileDevice = window.matchMedia('(max-width: 767px)').matches;
+    return isMobileDevice ? 'webgpu' : 'ollama';
+  });
+  const [statusBarExpanded, setStatusBarExpanded] = useState<boolean>(() => {
+    // Collapsed by default on mobile to maximize chat space
+    const isMobileDevice = window.matchMedia('(max-width: 767px)').matches;
+    return !isMobileDevice;
   });
   const [isWebGPUAvailable, setIsWebGPUAvailable] = useState<boolean>(true);
   const [webgpuModels, setWebgpuModels] = useState<EdgeModel[]>([]);
@@ -909,16 +917,70 @@ Response: Certainly, I will delete the outdated paragraph.
     localStorage.setItem('openword_copilot_messages', JSON.stringify(defaultGreeting));
   };
 
+  // Helper: get short model name for the compact status summary
+  const getActiveModelShortName = () => {
+    if (modelMode === 'webgpu') {
+      const m = webgpuModels.find(x => x.model_id === selectedWebgpuModel);
+      return m ? m.name : 'Custom';
+    }
+    return selectedModel;
+  };
+
+  const getStatusLabel = () => {
+    if (modelMode === 'webgpu') {
+      if (isWebgpuLoaded) return 'Ready';
+      if (isWebgpuLoading) return 'Loading…';
+      if (!isWebGPUAvailable) return 'Unsupported';
+      return 'Not loaded';
+    }
+    if (isConnected) return 'Connected';
+    if (isChecking) return 'Checking…';
+    return 'Offline';
+  };
+
+  const getStatusLedClass = () => {
+    if (modelMode === 'webgpu') {
+      if (isWebgpuLoaded) return 'active';
+      if (isWebgpuLoading) return 'checking';
+      return 'inactive';
+    }
+    if (isConnected) return 'active';
+    if (isChecking) return 'checking';
+    return 'inactive';
+  };
+
   return (
     <div className="copilot-panel">
-      {/* Connection Header */}
+      {/* Compact mobile status summary (collapsed) */}
+      {isMobile && !statusBarExpanded && (
+        <button
+          className="copilot-status-summary"
+          onClick={() => setStatusBarExpanded(true)}
+        >
+          <span className={`status-led ${getStatusLedClass()}`} />
+          <span className="status-summary-mode">{modelMode === 'webgpu' ? 'WebGPU' : 'Ollama'}</span>
+          <span className="status-summary-divider">·</span>
+          <span className="status-summary-model">{getActiveModelShortName()}</span>
+          <span className="status-summary-divider">·</span>
+          <span className="status-summary-status">{getStatusLabel()}</span>
+          <ChevronDown size={14} className="status-summary-chevron" />
+        </button>
+      )}
+
+      {/* Connection Header — always visible on desktop, collapsible on mobile */}
+      {(!isMobile || statusBarExpanded) && (
       <div className="copilot-status-bar">
+        {isMobile && (
+          <button
+            className="status-bar-collapse-btn"
+            onClick={() => setStatusBarExpanded(false)}
+            title="Collapse"
+          >
+            <ChevronDown size={14} style={{ transform: 'rotate(180deg)' }} />
+          </button>
+        )}
         <div className="status-indicator-wrapper">
-          <span className={`status-led ${
-            modelMode === 'webgpu' 
-              ? (isWebgpuLoaded ? 'active' : isWebgpuLoading ? 'checking' : 'inactive') 
-              : (isConnected ? 'active' : isChecking ? 'checking' : 'inactive')
-          }`} />
+          <span className={`status-led ${getStatusLedClass()}`} />
           <select 
             className="copilot-mode-select"
             value={modelMode}
@@ -1026,6 +1088,7 @@ Response: Certainly, I will delete the outdated paragraph.
           )
         )}
       </div>
+      )}
 
       {/* WebGPU Loading Progress Card */}
       {modelMode === 'webgpu' && webgpuLoadProgress && (

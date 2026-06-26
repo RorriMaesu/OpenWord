@@ -5095,6 +5095,82 @@ mark {
     flex-shrink: 0 !important;
   }
 
+  /* Compact collapsible status summary (mobile) */
+  .copilot-status-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.02);
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main);
+    flex-shrink: 0;
+    text-align: left;
+    transition: background-color 0.15s;
+  }
+  .copilot-status-summary:active {
+    background: rgba(0, 0, 0, 0.06);
+  }
+  .status-summary-mode {
+    color: var(--text-main);
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .status-summary-divider {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1;
+  }
+  .status-summary-model {
+    color: var(--text-main);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .status-summary-status {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .status-summary-chevron {
+    margin-left: auto;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+
+  /* Collapse button inside expanded status bar */
+  .status-bar-collapse-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: background-color 0.15s;
+  }
+  .status-bar-collapse-btn:active {
+    background: rgba(0, 0, 0, 0.08);
+  }
+  .mobile-drawer .copilot-status-bar {
+    position: relative;
+  }
+
   /* AI Panel Tab Segmented Bar */
   .mobile-drawer .copilot-panel-tabs {
     height: 42px;
