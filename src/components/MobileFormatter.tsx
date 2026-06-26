@@ -131,11 +131,15 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
   const runCommand = (command: (chain: any) => any) => {
     if (!editor) return;
-    if (editor.isFocused) {
-      command(editor.chain()).run();
-    } else {
-      command(editor.chain().focus()).run();
-    }
+    command(editor.chain().focus()).run();
+
+    // Refocus after the browser's touch/mouse event loop finishes 
+    // to override any focus shift caused by the user releasing the button.
+    setTimeout(() => {
+      if (editor && !editor.isFocused) {
+        editor.commands.focus();
+      }
+    }, 20);
   };
 
   const setHeadingStyle = (level: 1 | 2 | 3 | 'paragraph') => {
