@@ -1426,30 +1426,37 @@ Response: Certainly, I will delete the outdated paragraph.
           <div className="alert-body">
             <h4>Local LLM Client Off</h4>
             <p>Ollama was not detected running on port 11434.</p>
+            <p style={{ fontSize: '11px', lineHeight: '1.4', margin: '4px 0 8px 0', color: 'var(--text-muted)' }}>
+              💡 If you don't have Ollama installed or lack the hardware to run native models locally, 
+              you can run lightweight models directly in your web browser tab.
+            </p>
             <div className="alert-actions flex-wrap">
+              <button 
+                onClick={() => setModelMode('webgpu')} 
+                className="btn-alert-primary"
+              >
+                Switch to WebGPU (In-Browser)
+              </button>
               {isControlApiAvailable ? (
                 <button 
                   onClick={handleLaunchOllama} 
-                  className="btn-alert-primary"
+                  className="btn-alert-secondary"
                   disabled={isLaunching}
                 >
                   {isLaunching ? 'Spawning Daemon...' : 'Launch Ollama'}
                 </button>
               ) : (
-                <div className="manual-launch-tip">
-                  <small>💡 Open Ollama on your computer to connect</small>
-                </div>
+                <button 
+                  onClick={() => {
+                    setDownloadStarted(false);
+                    setShowInstallModal(true);
+                  }} 
+                  className="btn-alert-secondary"
+                  title="Download and installation help"
+                >
+                  Install Ollama
+                </button>
               )}
-              <button 
-                onClick={() => {
-                  setDownloadStarted(false);
-                  setShowInstallModal(true);
-                }} 
-                className="btn-alert-secondary"
-                title="Download and installation help"
-              >
-                Install Assistant
-              </button>
             </div>
             <div className="cors-instruction">
               <small>Ensure CORS is enabled by setting environment variable:</small>
@@ -1469,6 +1476,13 @@ Response: Certainly, I will delete the outdated paragraph.
           </div>
           <p className="hw-info"><strong>GPU:</strong> {hardware.gpuName} (~{hardware.estimatedVramGb}GB VRAM)</p>
           <p className="hw-recommend"><strong>Recommendation:</strong> Use <code>{hardware.recommendedModel}</code>. {hardware.reason}</p>
+          {hardware.estimatedVramGb < 3 && (
+            <p className="hw-low-vram-tip" style={{ fontSize: '11px', margin: '6px 0 0 0', lineHeight: '1.4', color: '#ffb300' }}>
+              💡 <strong>Low VRAM Tip:</strong> Running Ollama models on this hardware may run slowly. 
+              We recommend switching the mode above to <strong>WebGPU</strong> and loading 
+              Llama 3.2 1B or Gemma 4 E2B for a faster, in-browser offline experience.
+            </p>
+          )}
           {!models.some(m => isCompatibleModel(m, hardware.recommendedModel)) && (
             <button 
               onClick={() => {
@@ -1478,6 +1492,7 @@ Response: Certainly, I will delete the outdated paragraph.
               }}
               className="hw-download-btn"
               disabled={isPulling}
+              style={{ marginTop: '8px' }}
             >
               <Download size={11} />
               <span>Download Recommended Model</span>
