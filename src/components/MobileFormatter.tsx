@@ -124,11 +124,6 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
   if (!editor) return null;
 
-  const preventFocusLoss = (e: React.MouseEvent | React.TouchEvent, action: () => void) => {
-    e.preventDefault();
-    action();
-  };
-
   const runCommand = (command: (chain: any) => any) => {
     if (!editor) return;
     command(editor.chain().focus()).run();
@@ -211,62 +206,143 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
     }
   };
 
+  const executeCoreCommand = (command: string) => {
+    if (!editor) return;
+    switch (command) {
+      case 'undo':
+        runCommand(chain => chain.undo());
+        break;
+      case 'redo':
+        runCommand(chain => chain.redo());
+        break;
+      case 'bold':
+        runCommand(chain => chain.toggleBold());
+        break;
+      case 'italic':
+        runCommand(chain => chain.toggleItalic());
+        break;
+      case 'underline':
+        runCommand(chain => chain.toggleUnderline());
+        break;
+      case 'strike':
+        runCommand(chain => chain.toggleStrike());
+        break;
+      case 'align-left':
+        runCommand(chain => chain.setTextAlign('left'));
+        break;
+      case 'align-center':
+        runCommand(chain => chain.setTextAlign('center'));
+        break;
+      case 'bullet-list':
+        runCommand(chain => chain.toggleBulletList());
+        break;
+      case 'ordered-list':
+        runCommand(chain => chain.toggleOrderedList());
+        break;
+      case 'table-row-above':
+        runCommand(chain => chain.addRowBefore());
+        break;
+      case 'table-row-below':
+        runCommand(chain => chain.addRowAfter());
+        break;
+      case 'table-col-left':
+        runCommand(chain => chain.addColumnBefore());
+        break;
+      case 'table-col-right':
+        runCommand(chain => chain.addColumnAfter());
+        break;
+      case 'table-delete-row':
+        runCommand(chain => chain.deleteRow());
+        break;
+      case 'table-delete-col':
+        runCommand(chain => chain.deleteColumn());
+        break;
+      case 'table-delete-table':
+        runCommand(chain => chain.deleteTable());
+        break;
+      case 'toggle-sheet':
+        const nextState = !isBottomSheetOpen;
+        setIsBottomSheetOpen(nextState);
+        if (nextState) {
+          (document.activeElement as HTMLElement)?.blur();
+        }
+        break;
+    }
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleInteraction = (e: Event) => {
+      const button = (e.target as HTMLElement).closest('.mobile-formatter-mainrow [data-command], .contextual-table-row [data-command]');
+      if (button) {
+        e.preventDefault();
+        const command = button.getAttribute('data-command');
+        if (command) {
+          executeCoreCommand(command);
+        }
+      }
+    };
+
+    container.addEventListener('touchstart', handleInteraction, { passive: false });
+    container.addEventListener('mousedown', handleInteraction);
+
+    return () => {
+      container.removeEventListener('touchstart', handleInteraction);
+      container.removeEventListener('mousedown', handleInteraction);
+    };
+  }, [editor, isBottomSheetOpen]);
+
   return (
     <div ref={containerRef} className="mobile-formatter-container no-print">
       {/* 1. Contextual Table Toolbar (Displays only when cursor is inside a table) */}
       {isTableFocused && (
         <div className="mobile-formatter-subrow contextual-table-row">
           <button
-            onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.addRowBefore()))}
-            onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.addRowBefore()))}
+            data-command="table-row-above"
             className="mobile-tool-btn sub-btn"
             title="Add Row Above"
           >
             <Plus size={12} /><span>Row Above</span>
           </button>
           <button
-            onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.addRowAfter()))}
-            onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.addRowAfter()))}
+            data-command="table-row-below"
             className="mobile-tool-btn sub-btn"
             title="Add Row Below"
           >
             <Plus size={12} /><span>Row Below</span>
           </button>
           <button
-            onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.addColumnBefore()))}
-            onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.addColumnBefore()))}
+            data-command="table-col-left"
             className="mobile-tool-btn sub-btn"
             title="Add Column Left"
           >
             <Plus size={12} /><span>Col Left</span>
           </button>
           <button
-            onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.addColumnAfter()))}
-            onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.addColumnAfter()))}
+            data-command="table-col-right"
             className="mobile-tool-btn sub-btn"
             title="Add Column Right"
           >
             <Plus size={12} /><span>Col Right</span>
           </button>
           <button
-            onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.deleteRow()))}
-            onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.deleteRow()))}
+            data-command="table-delete-row"
             className="mobile-tool-btn sub-btn text-danger"
             title="Delete Row"
           >
             <Minus size={12} /><span>Del Row</span>
           </button>
           <button
-            onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.deleteColumn()))}
-            onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.deleteColumn()))}
+            data-command="table-delete-col"
             className="mobile-tool-btn sub-btn text-danger"
             title="Delete Column"
           >
             <Minus size={12} /><span>Del Col</span>
           </button>
           <button
-            onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.deleteTable()))}
-            onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.deleteTable()))}
+            data-command="table-delete-table"
             className="mobile-tool-btn sub-btn text-danger"
             title="Delete Table"
           >
@@ -279,16 +355,14 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
       <div className="mobile-formatter-mainrow">
         {/* Undo/Redo */}
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.undo()))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.undo()))}
+          data-command="undo"
           disabled={!editor.can().undo()}
           className="mobile-tool-btn"
         >
           <Undo size={16} />
         </button>
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.redo()))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.redo()))}
+          data-command="redo"
           disabled={!editor.can().redo()}
           className="mobile-tool-btn"
         >
@@ -299,29 +373,25 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
         {/* Text Formats */}
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleBold()))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleBold()))}
+          data-command="bold"
           className={`mobile-tool-btn ${editor.isActive('bold') ? 'active' : ''}`}
         >
           <Bold size={16} />
         </button>
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleItalic()))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleItalic()))}
+          data-command="italic"
           className={`mobile-tool-btn ${editor.isActive('italic') ? 'active' : ''}`}
         >
           <Italic size={16} />
         </button>
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleUnderline()))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleUnderline()))}
+          data-command="underline"
           className={`mobile-tool-btn ${editor.isActive('underline') ? 'active' : ''}`}
         >
           <Underline size={16} />
         </button>
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleStrike()))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleStrike()))}
+          data-command="strike"
           className={`mobile-tool-btn ${editor.isActive('strike') ? 'active' : ''}`}
         >
           <Strikethrough size={16} />
@@ -331,15 +401,13 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
         {/* Alignments */}
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('left')))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('left')))}
+          data-command="align-left"
           className={`mobile-tool-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
         >
           <AlignLeft size={16} />
         </button>
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('center')))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('center')))}
+          data-command="align-center"
           className={`mobile-tool-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
         >
           <AlignCenter size={16} />
@@ -349,15 +417,13 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
         {/* Lists */}
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleBulletList()))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleBulletList()))}
+          data-command="bullet-list"
           className={`mobile-tool-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
         >
           <List size={16} />
         </button>
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleOrderedList()))}
-          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleOrderedList()))}
+          data-command="ordered-list"
           className={`mobile-tool-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
         >
           <ListOrdered size={16} />
@@ -367,20 +433,7 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
         {/* Expanded Formatting Sheet Trigger Button */}
         <button
-          onMouseDown={(e) => preventFocusLoss(e, () => {
-            const nextState = !isBottomSheetOpen;
-            setIsBottomSheetOpen(nextState);
-            if (nextState) {
-              (document.activeElement as HTMLElement)?.blur();
-            }
-          })}
-          onTouchStart={(e) => preventFocusLoss(e, () => {
-            const nextState = !isBottomSheetOpen;
-            setIsBottomSheetOpen(nextState);
-            if (nextState) {
-              (document.activeElement as HTMLElement)?.blur();
-            }
-          })}
+          data-command="toggle-sheet"
           className={`mobile-tool-btn format-trigger-btn ${isBottomSheetOpen ? 'active' : ''}`}
           title="More Formatting Options"
           style={{ width: '48px', gap: '2px', backgroundColor: 'var(--brand-50)', borderColor: 'var(--brand-200)' }}
@@ -465,8 +518,7 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                     <label>Font Size</label>
                     <div className="sheet-size-control">
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => handleFontSizeChange(-1))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => handleFontSizeChange(-1))}
+                        onClick={() => handleFontSizeChange(-1)}
                         className="size-btn"
                       >
                         <Minus size={14} />
@@ -499,8 +551,7 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                         </select>
                       </div>
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => handleFontSizeChange(1))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => handleFontSizeChange(1))}
+                        onClick={() => handleFontSizeChange(1)}
                         className="size-btn"
                       >
                         <Plus size={14} />
@@ -515,8 +566,7 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                       {TEXT_COLORS.map(color => (
                         <button
                           key={color.value}
-                          onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setColor(color.value)))}
-                          onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setColor(color.value)))}
+                          onClick={() => runCommand(chain => chain.setColor(color.value))}
                           className={`color-swatch ${editor.isActive('textStyle', { color: color.value }) ? 'active' : ''}`}
                           style={{ backgroundColor: color.value }}
                           title={color.name}
@@ -532,20 +582,13 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                       {HIGHLIGHT_COLORS.map(color => (
                         <button
                           key={color.value}
-                          onMouseDown={(e) => preventFocusLoss(e, () => {
+                          onClick={() => {
                             if (color.value === 'transparent') {
                               runCommand(chain => chain.unsetHighlight());
                             } else {
                               runCommand(chain => chain.toggleHighlight({ color: color.value }));
                             }
-                          })}
-                          onTouchStart={(e) => preventFocusLoss(e, () => {
-                            if (color.value === 'transparent') {
-                              runCommand(chain => chain.unsetHighlight());
-                            } else {
-                              runCommand(chain => chain.toggleHighlight({ color: color.value }));
-                            }
-                          })}
+                          }}
                           className={`color-swatch ${color.value === 'transparent' ? 'transparent-swatch' : ''} ${editor.isActive('highlight', { color: color.value }) ? 'active' : ''}`}
                           style={color.value === 'transparent' ? {} : { backgroundColor: color.value }}
                           title={color.name}
@@ -556,8 +599,7 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
                   {/* Clear formatting */}
                   <button 
-                    onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.unsetAllMarks().clearNodes()))}
-                    onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.unsetAllMarks().clearNodes()))}
+                    onClick={() => runCommand(chain => chain.unsetAllMarks().clearNodes())}
                     className="sheet-action-btn-danger"
                   >
                     <Trash2 size={14} /><span>Clear Text Formatting</span>
@@ -572,29 +614,25 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                     <label>Heading Style</label>
                     <div className="heading-selector-grid">
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => setHeadingStyle('paragraph'))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => setHeadingStyle('paragraph'))}
+                        onClick={() => setHeadingStyle('paragraph')}
                         className={`heading-select-btn ${editor.isActive('paragraph') ? 'active' : ''}`}
                       >
                         Paragraph
                       </button>
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => setHeadingStyle(1))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => setHeadingStyle(1))}
+                        onClick={() => setHeadingStyle(1)}
                         className={`heading-select-btn ${editor.isActive('heading', { level: 1 }) ? 'active' : ''}`}
                       >
                         Heading 1
                       </button>
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => setHeadingStyle(2))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => setHeadingStyle(2))}
+                        onClick={() => setHeadingStyle(2)}
                         className={`heading-select-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`}
                       >
                         Heading 2
                       </button>
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => setHeadingStyle(3))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => setHeadingStyle(3))}
+                        onClick={() => setHeadingStyle(3)}
                         className={`heading-select-btn ${editor.isActive('heading', { level: 3 }) ? 'active' : ''}`}
                       >
                         Heading 3
@@ -607,29 +645,25 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                     <label>Alignment</label>
                     <div className="segmented-control">
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('left')))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('left')))}
+                        onClick={() => runCommand(chain => chain.setTextAlign('left'))}
                         className={`segment-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
                       >
                         <AlignLeft size={16} />
                       </button>
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('center')))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('center')))}
+                        onClick={() => runCommand(chain => chain.setTextAlign('center'))}
                         className={`segment-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
                       >
                         <AlignCenter size={16} />
                       </button>
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('right')))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('right')))}
+                        onClick={() => runCommand(chain => chain.setTextAlign('right'))}
                         className={`segment-btn ${editor.isActive({ textAlign: 'right' }) ? 'active' : ''}`}
                       >
                         <AlignRight size={16} />
                       </button>
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('justify')))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setTextAlign('justify')))}
+                        onClick={() => runCommand(chain => chain.setTextAlign('justify'))}
                         className={`segment-btn ${editor.isActive({ textAlign: 'justify' }) ? 'active' : ''}`}
                       >
                         <AlignJustify size={16} />
@@ -642,16 +676,14 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                     <label>List Styles</label>
                     <div className="segmented-control">
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleBulletList()))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleBulletList()))}
+                        onClick={() => runCommand(chain => chain.toggleBulletList())}
                         className={`segment-btn list-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
                         style={{ flexGrow: 1 }}
                       >
                         <List size={16} /><span style={{ marginLeft: '6px', fontSize: '13px' }}>Bulleted List</span>
                       </button>
                       <button 
-                        onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleOrderedList()))}
-                        onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.toggleOrderedList()))}
+                        onClick={() => runCommand(chain => chain.toggleOrderedList())}
                         className={`segment-btn list-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
                         style={{ flexGrow: 1 }}
                       >
@@ -667,24 +699,21 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
                   {/* Insert Actions Grid */}
                   <div className="insert-actions-grid">
                     <button 
-                      onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true })))}
-                      onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true })))}
+                      onClick={() => runCommand(chain => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }))}
                       className="insert-action-card"
                     >
                       <TableIcon size={20} className="text-brand" />
                       <span>Table (3x3)</span>
                     </button>
                     <button 
-                      onMouseDown={(e) => preventFocusLoss(e, () => handleInsertLink())}
-                      onTouchStart={(e) => preventFocusLoss(e, () => handleInsertLink())}
+                      onClick={handleInsertLink}
                       className={`insert-action-card ${editor.isActive('link') ? 'active' : ''}`}
                     >
                       <LinkIcon size={20} className="text-brand" />
                       <span>Hyperlink</span>
                     </button>
                     <button 
-                      onMouseDown={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setPageBreak()))}
-                      onTouchStart={(e) => preventFocusLoss(e, () => runCommand(chain => chain.setPageBreak()))}
+                      onClick={() => runCommand(chain => chain.setPageBreak())}
                       className="insert-action-card"
                     >
                       <Plus size={20} className="text-brand" />
