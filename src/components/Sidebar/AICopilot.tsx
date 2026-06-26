@@ -1393,6 +1393,40 @@ Response: Certainly, I will delete the outdated paragraph.
         </button>
       </div>
 
+      {/* WebGPU Load CTA — prominent action when model not loaded */}
+      {modelMode === 'webgpu' && isWebGPUAvailable && !isWebgpuLoaded && !isWebgpuLoading && (
+        <div className="webgpu-load-cta">
+          <div className="cta-icon-row">
+            <Download size={24} className="cta-icon" />
+          </div>
+          <h4 className="cta-title">Download &amp; Start Model</h4>
+          <p className="cta-model-name">
+            {(() => {
+              const m = webgpuModels.find(x => x.model_id === selectedWebgpuModel);
+              return m ? `${m.name} (${m.size})` : selectedWebgpuModel;
+            })()}
+          </p>
+          <p className="cta-description">
+            Tap to cache this model in your browser for offline AI writing.
+          </p>
+          <div className="cta-actions">
+            <button
+              className="cta-load-btn"
+              onClick={handleLoadWebgpuModel}
+            >
+              <Download size={16} />
+              <span>Load Model</span>
+            </button>
+            <button
+              className="cta-change-btn"
+              onClick={() => setStatusBarExpanded(true)}
+            >
+              Change Model
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Chat Feed */}
       <div className="copilot-chat-feed">
         {messages.map((msg, i) => (

@@ -3624,6 +3624,118 @@ mark {
   flex-shrink: 0;
 }
 
+/* WebGPU Load CTA Card */
+.webgpu-load-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 20px;
+  margin: 12px;
+  background: var(--bg-sheet);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.cta-icon-row {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0078d4 0%, #00b4fc 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.cta-icon {
+  color: white;
+}
+
+.cta-title {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.cta-model-name {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--word-blue);
+}
+
+.cta-description {
+  margin: 0 0 16px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.cta-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.cta-load-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0078d4 0%, #00b4fc 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(0, 120, 212, 0.3);
+  min-height: 44px;
+}
+
+.cta-load-btn:active {
+  opacity: 0.85;
+  transform: scale(0.97);
+}
+
+.cta-change-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  min-height: 44px;
+}
+
+.cta-change-btn:active {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .webgpu-load-cta {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .cta-change-btn {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+}
+
+[data-theme='dark'] .cta-change-btn:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 [data-theme='dark'] .copilot-mode-tabs {
   background: rgba(255, 255, 255, 0.02);
 }
