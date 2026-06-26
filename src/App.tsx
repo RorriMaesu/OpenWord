@@ -6,7 +6,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { HeaderFooterManager } from './components/Editor/HeaderFooterManager';
 import { Editor as TiptapEditor } from '@tiptap/react';
-import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles, ArrowLeft, Check, Compass, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Undo, Redo, Save, Printer, Search, Minus, Square, X, Cloud, CloudOff, Coffee, Sparkles, ArrowLeft, Check, RefreshCw } from 'lucide-react';
 import { getDocument, deleteDocument } from './utils/db';
 import './App.css';
 import { TutorialTour } from './components/Tutorial/TutorialTour';
@@ -354,20 +354,6 @@ const AppContent: React.FC = () => {
               title="AI Copilot"
             >
               <Sparkles size={16} />
-            </button>
-            <button
-              onClick={() => {
-                if (showSidebar && sidebarTab === 'outline') {
-                  setShowSidebar(false);
-                } else {
-                  setSidebarTab('outline');
-                  setShowSidebar(true);
-                }
-              }}
-              className={`titlebar-icon-btn ${showSidebar && sidebarTab === 'outline' ? 'active' : ''}`}
-              title="Document Outline"
-            >
-              <Compass size={16} />
             </button>
           </div>
         </div>
