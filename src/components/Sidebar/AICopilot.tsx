@@ -81,7 +81,10 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [webgpuModels, setWebgpuModels] = useState<EdgeModel[]>([]);
   const [selectedWebgpuModel, setSelectedWebgpuModel] = useState<string>(() => {
     const saved = localStorage.getItem('openword_copilot_webgpu_model');
-    if (!saved || saved === 'gemma-2-2b-it-q4f16_1-MLC') {
+    if (!saved) return 'gemma-4-E2B-it-q4f16_1-MLC';
+    // Migrate any old Gemma 2, Gemma 1, or broken E4B model IDs to Gemma 4 E2B
+    const lower = saved.toLowerCase();
+    if (lower.startsWith('gemma-2-') || lower.startsWith('gemma-2b') || lower.includes('gemma-4-e4b')) {
       return 'gemma-4-E2B-it-q4f16_1-MLC';
     }
     return saved;

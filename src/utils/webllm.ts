@@ -21,7 +21,11 @@ export function checkWebGPUSupport(): boolean {
 }
 
 /**
- * Get dynamic list of edge-suitable models from WebLLM registry
+ * Get dynamic list of edge-suitable models from WebLLM registry.
+ * 
+ * Default list is curated with Gemma 4 E2B (custom HF repo) as the recommended
+ * edge model. Dynamic discovery from WebLLM's prebuilt registry adds any NEW
+ * small models, but excludes old Gemma 2/1 variants to prevent dropdown pollution.
  */
 export function getAvailableEdgeModels(): EdgeModel[] {
   const defaultModels: EdgeModel[] = [
@@ -37,25 +41,14 @@ export function getAvailableEdgeModels(): EdgeModel[] {
       }
     },
     {
-      model_id: 'gemma-4-E4B-it-q4f16_1-MLC',
-      name: 'Gemma 4 E4B (Edge Multimodal Advanced)',
-      size: '2.8 GB',
-      customConfig: {
-        model: 'https://huggingface.co/cnhktyom/gemma-4-E4B-it-q4f16_1-MLC',
-        model_id: 'gemma-4-E4B-it-q4f16_1-MLC',
-        model_lib: 'https://huggingface.co/cnhktyom/gemma-4-E4B-it-q4f16_1-MLC/resolve/main/libs/gemma-4-E4B-it-q4f16_1-MLC-webgpu.wasm',
-        required_features: ['shader-f16']
-      }
+      model_id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+      name: 'Llama 3.2 1B (Mobile Friendly)',
+      size: '1.2 GB'
     },
     {
       model_id: 'gemma-2-2b-it-q4f16_1-MLC',
       name: 'Gemma 2 2B (Older Edge Model)',
       size: '1.6 GB'
-    },
-    {
-      model_id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
-      name: 'Llama 3.2 1B (Mobile Friendly)',
-      size: '1.2 GB'
     },
     {
       model_id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
@@ -69,17 +62,37 @@ export function getAvailableEdgeModels(): EdgeModel[] {
     }
   ];
 
+  // Exclusion prefixes — block old Gemma 2/1 duplicates and oversized models
+  // from polluting the dropdown. WebLLM v0.2.84 ships ~13 Gemma 2 variants
+  // (q4f32, -1k context, jpn locale, etc.) that all match broad keywords.
+  const excludedPrefixes = [
+    'gemma-2-',    // All Gemma 2 variants (already represented by our curated entry)
+    'gemma-2b',    // Gemma 1 2B variants (e.g. gemma-2b-it-q4f32_1-MLC)
+    'gemma-2-9b',  // Gemma 2 9B — too large for edge
+    'gemma-2-27b', // Gemma 2 27B — far too large
+  ];
+
   try {
     const prebuiltList = prebuiltAppConfig.model_list || [];
-    const edgeCompatibleKeywords = ['1b', '2b', '3b', '4b', '1.5b', 'e2b', 'e4b', 'gemma-2b', 'gemma2-2b', 'gemma-4', 'gemma4', 'gemma-4-e2b', 'gemma-4-e4b', 'gemma4-2b', 'phi-3-mini', 'phi-3'];
     
     const dynamicallyDiscovered = prebuiltList
       .filter(item => {
         const id = item.model_id.toLowerCase();
-        return edgeCompatibleKeywords.some(kw => id.includes(kw));
+        
+        // Block excluded model families
+        if (excludedPrefixes.some(prefix => id.startsWith(prefix))) return false;
+        
+        // Only include genuinely small models suitable for edge/mobile
+        const edgePatterns = [
+          '1b', '1.5b', '2b', '3b', '4b',
+          'e2b', 'e4b',
+          'phi-3-mini', 'phi-3.5-mini',
+          'gemma3-1b', 'gemma-4',
+        ];
+        return edgePatterns.some(kw => id.includes(kw));
       })
       .map(item => {
-        let cleanName = item.model_id
+        const cleanName = item.model_id
           .replace(/-MLC$/, '')
           .replace(/-q\w+$/, '')
           .replace(/-Instruct$/, '')
