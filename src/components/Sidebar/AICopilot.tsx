@@ -80,7 +80,11 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   const [isWebGPUAvailable, setIsWebGPUAvailable] = useState<boolean>(true);
   const [webgpuModels, setWebgpuModels] = useState<EdgeModel[]>([]);
   const [selectedWebgpuModel, setSelectedWebgpuModel] = useState<string>(() => {
-    return localStorage.getItem('openword_copilot_webgpu_model') || 'gemma-2-2b-it-q4f16_1-MLC';
+    const saved = localStorage.getItem('openword_copilot_webgpu_model');
+    if (!saved || saved === 'gemma-2-2b-it-q4f16_1-MLC') {
+      return 'gemma-4-E2B-it-q4f16_1-MLC';
+    }
+    return saved;
   });
   const [isWebgpuLoading, setIsWebgpuLoading] = useState<boolean>(false);
   const [webgpuLoadProgress, setWebgpuLoadProgress] = useState<{ text: string; pct: number } | null>(null);
