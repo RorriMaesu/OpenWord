@@ -238,27 +238,18 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
     const activeModel = modelMode === 'webgpu' ? selectedWebgpuModel : selectedModel;
     const friendlyName = getFriendlyModelName(activeModel);
     
-    // Check if we already have messages loaded (so we don't overwrite user's saved history)
-    const saved = localStorage.getItem('openword_copilot_messages');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return;
-        }
-      } catch (e) {
-        // Parse error, proceed
-      }
-    }
+    // Check if the user has actual chat history (more than 1 message, or the single message isn't a greeting)
+    const hasRealHistory = messages.length > 1 || (messages.length === 1 && !messages[0].content.includes('your offline AI co-writer'));
 
-    // If messages are empty or only contain a greeting assistant role, replace the greeting
-    if (messages.length === 0 || (messages.length === 1 && messages[0].role === 'assistant')) {
-      setMessages([
+    if (!hasRealHistory) {
+      const newGreeting = [
         { 
-          role: 'assistant', 
+          role: 'assistant' as const, 
           content: `Hello! I am ${friendlyName}, your offline AI co-writer. How can I help you write or edit your document today?` 
         }
-      ]);
+      ];
+      setMessages(newGreeting);
+      localStorage.setItem('openword_copilot_messages', JSON.stringify(newGreeting));
     }
   }, [selectedModel, selectedWebgpuModel, modelMode]);
 
