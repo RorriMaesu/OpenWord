@@ -323,7 +323,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ editor }) => {
   // Auto-scroll chat feed
   useEffect(() => {
     feedEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamedResponse]);
+  }, [messages, streamedResponse, isGenerating]);
 
   const handleLaunchOllama = async () => {
     setIsLaunching(true);
@@ -1562,23 +1562,36 @@ Response: Certainly, I will delete the outdated paragraph.
         ))}
 
         {/* Live streaming text bubble */}
-        {isGenerating && (streamedResponse || streamedOperations.length > 0) && (
+        {isGenerating && (
           <div className="chat-bubble-row assistant streaming">
             <div className="bubble-avatar">
               <Bot size={14} className="spinning" />
             </div>
             <div className="bubble-content-card">
-              {streamedResponse && <div className="bubble-text">{streamedResponse}</div>}
-              
-              {streamedOperations.length > 0 && (
-                <CopilotDiffCard
-                  editor={editor}
-                  operations={streamedOperations}
-                  originalBlocks={streamedOriginalBlocks}
-                  status="pending"
-                  onStatusChange={() => {}}
-                  readOnly={true}
-                />
+              {(!streamedResponse && streamedOperations.length === 0) ? (
+                <div className="bubble-text thinking-bubble">
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span className="thinking-text">AI is thinking...</span>
+                </div>
+              ) : (
+                <>
+                  {streamedResponse && <div className="bubble-text">{streamedResponse}</div>}
+                  
+                  {streamedOperations.length > 0 && (
+                    <CopilotDiffCard
+                      editor={editor}
+                      operations={streamedOperations}
+                      originalBlocks={streamedOriginalBlocks}
+                      status="pending"
+                      onStatusChange={() => {}}
+                      readOnly={true}
+                    />
+                  )}
+                </>
               )}
 
               <div className="streaming-actions">
