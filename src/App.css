@@ -5496,4 +5496,79 @@ mark {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Persistent status bar row styles */
+.status-bar-main-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.webgpu-status-extra-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-color);
+  font-size: 11px;
+  color: var(--text-muted);
+  width: 100%;
+  margin-top: 2px;
+}
+
+.extra-actions-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.extra-action-link {
+  background: transparent;
+  border: none;
+  color: var(--word-blue);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+}
+
+.extra-action-link:hover {
+  background-color: rgba(24, 90, 189, 0.05);
+}
+
+.extra-action-link.delete {
+  color: var(--text-danger);
+}
+
+.extra-action-link.delete:hover {
+  background-color: rgba(220, 38, 38, 0.05);
+}
+
+.mobile-drawer .status-bar-main-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+/* Dark mode overrides */
+[data-theme='dark'] .extra-action-link {
+  color: var(--brand-300);
+}
+[data-theme='dark'] .extra-action-link:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+[data-theme='dark'] .extra-action-link.delete {
+  color: HSL(0, 95%, 70%);
+}
+[data-theme='dark'] .extra-action-link.delete:hover {
+  background-color: rgba(220, 38, 38, 0.15);
+}
+
+
 

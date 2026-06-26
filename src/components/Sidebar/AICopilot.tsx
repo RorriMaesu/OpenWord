@@ -1009,7 +1009,7 @@ Response: Certainly, I will delete the outdated paragraph.
 
       {/* Connection Header — always visible on desktop, collapsible on mobile */}
       {(!isMobile || statusBarExpanded) && (
-      <div className="copilot-status-bar">
+      <div className="copilot-status-bar" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'stretch' }}>
         {isMobile && (
           <button
             className="status-bar-collapse-btn"
@@ -1019,113 +1019,140 @@ Response: Certainly, I will delete the outdated paragraph.
             <ChevronDown size={14} style={{ transform: 'rotate(180deg)' }} />
           </button>
         )}
-        <div className="status-indicator-wrapper">
-          <span className={`status-led ${getStatusLedClass()}`} />
-          <select 
-            className="copilot-mode-select"
-            value={modelMode}
-            onChange={(e) => setModelMode(e.target.value as 'ollama' | 'webgpu')}
-          >
-            <option value="ollama">Ollama (Daemon)</option>
-            <option value="webgpu">WebGPU (Browser)</option>
-          </select>
-        </div>
-        
-        {modelMode === 'webgpu' ? (
-          isWebGPUAvailable ? (
-            <div className="status-model-row">
-              <select 
-                className="copilot-model-select"
-                value={selectedWebgpuModel}
-                onChange={(e) => {
-                  setSelectedWebgpuModel(e.target.value);
-                  setIsWebgpuLoaded(isEngineLoaded(e.target.value));
-                }}
-                disabled={isWebgpuLoading}
-              >
-                {webgpuModels.map(m => (
-                  <option key={m.model_id} value={m.model_id}>
-                    {m.name} ({m.size})
-                  </option>
-                ))}
-                <option value="custom">Custom MLC Model...</option>
-              </select>
-              
-              <button 
-                onClick={handleLoadWebgpuModel}
-                className={`webgpu-action-btn ${isWebgpuLoaded ? 'loaded' : ''}`}
-                disabled={isWebgpuLoading || (selectedWebgpuModel !== 'custom' && isWebgpuLoaded)}
-                title={isWebgpuLoaded ? "Model loaded and active" : "Load model weights into browser"}
-              >
-                {isWebgpuLoading ? (
-                  <RefreshCw size={11} className="spinning" />
-                ) : isWebgpuLoaded ? (
-                  <Sparkles size={11} />
-                ) : (
-                  <Download size={11} />
-                )}
-              </button>
+        <div className="status-bar-main-row">
+          <div className="status-indicator-wrapper">
+            <span className={`status-led ${getStatusLedClass()}`} />
+            <select 
+              className="copilot-mode-select"
+              value={modelMode}
+              onChange={(e) => setModelMode(e.target.value as 'ollama' | 'webgpu')}
+            >
+              <option value="ollama">Ollama (Daemon)</option>
+              <option value="webgpu">WebGPU (Browser)</option>
+            </select>
+          </div>
+          
+          {modelMode === 'webgpu' ? (
+            isWebGPUAvailable ? (
+              <div className="status-model-row">
+                <select 
+                  className="copilot-model-select"
+                  value={selectedWebgpuModel}
+                  onChange={(e) => {
+                    setSelectedWebgpuModel(e.target.value);
+                    setIsWebgpuLoaded(isEngineLoaded(e.target.value));
+                  }}
+                  disabled={isWebgpuLoading}
+                >
+                  {webgpuModels.map(m => (
+                    <option key={m.model_id} value={m.model_id}>
+                      {m.name} ({m.size})
+                    </option>
+                  ))}
+                  <option value="custom">Custom MLC Model...</option>
+                </select>
+                
+                <button 
+                  onClick={handleLoadWebgpuModel}
+                  className={`webgpu-action-btn ${isWebgpuLoaded ? 'loaded' : ''}`}
+                  disabled={isWebgpuLoading || (selectedWebgpuModel !== 'custom' && isWebgpuLoaded)}
+                  title={isWebgpuLoaded ? "Model loaded and active" : "Load model weights into browser"}
+                >
+                  {isWebgpuLoading ? (
+                    <RefreshCw size={11} className="spinning" />
+                  ) : isWebgpuLoaded ? (
+                    <Sparkles size={11} />
+                  ) : (
+                    <Download size={11} />
+                  )}
+                </button>
 
-              <button 
-                onClick={handleClearChat} 
-                className="copilot-clear-chat-btn" 
-                title="Clear Chat History"
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
+                <button 
+                  onClick={handleClearChat} 
+                  className="copilot-clear-chat-btn" 
+                  title="Clear Chat History"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ) : (
+              <div className="status-model-row">
+                <span className="unsupported-tag">Unsupported</span>
+                <button 
+                  onClick={handleClearChat} 
+                  className="copilot-clear-chat-btn" 
+                  title="Clear Chat History"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            )
           ) : (
-            <div className="status-model-row">
-              <span className="unsupported-tag">Unsupported</span>
+            isConnected ? (
+              <div className="status-model-row">
+                <select 
+                  className="copilot-model-select"
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                >
+                  {models.map(m => <option key={m} value={m}>{m}</option>)}
+                  {models.length === 0 && <option value="gemma4:2b">gemma4:2b</option>}
+                </select>
+                <button 
+                  className={`copilot-download-toggle-btn ${showDownloader ? 'active' : ''}`}
+                  onClick={() => setShowDownloader(!showDownloader)}
+                  title="Download new models"
+                >
+                  <Download size={13} />
+                </button>
+                <button 
+                  onClick={handleClearChat} 
+                  className="copilot-clear-chat-btn" 
+                  title="Clear Chat History"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ) : (
+              <div className="status-model-row">
+                <button onClick={runConnectionCheck} className="copilot-refresh-btn" title="Retry Check">
+                  <RefreshCw size={13} className={isChecking ? 'spinning' : ''} />
+                </button>
+                <button 
+                  onClick={handleClearChat} 
+                  className="copilot-clear-chat-btn" 
+                  title="Clear Chat History"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            )
+          )}
+        </div>
+
+        {modelMode === 'webgpu' && isWebGPUAvailable && (
+          <div className="webgpu-status-extra-actions">
+            <span className="cache-info-text">
+              Storage: {cacheSizeMB !== null ? `${cacheSizeMB} MB` : 'Estimating...'}
+            </span>
+            <div className="extra-actions-buttons">
               <button 
-                onClick={handleClearChat} 
-                className="copilot-clear-chat-btn" 
-                title="Clear Chat History"
+                type="button" 
+                className="extra-action-link" 
+                onClick={() => setShowWebgpuHelpModal(true)}
               >
-                <Trash2 size={13} />
+                <Monitor size={11} /> PC Setup
+              </button>
+              <button 
+                type="button" 
+                className="extra-action-link delete" 
+                onClick={handleClearCache}
+                disabled={isClearing}
+              >
+                <Trash2 size={11} /> Clear Cache
               </button>
             </div>
-          )
-        ) : (
-          isConnected ? (
-            <div className="status-model-row">
-              <select 
-                className="copilot-model-select"
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-              >
-                {models.map(m => <option key={m} value={m}>{m}</option>)}
-                {models.length === 0 && <option value="gemma4:2b">gemma4:2b</option>}
-              </select>
-              <button 
-                className={`copilot-download-toggle-btn ${showDownloader ? 'active' : ''}`}
-                onClick={() => setShowDownloader(!showDownloader)}
-                title="Download new models"
-              >
-                <Download size={13} />
-              </button>
-              <button 
-                onClick={handleClearChat} 
-                className="copilot-clear-chat-btn" 
-                title="Clear Chat History"
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          ) : (
-            <div className="status-model-row">
-              <button onClick={runConnectionCheck} className="copilot-refresh-btn" title="Retry Check">
-                <RefreshCw size={13} className={isChecking ? 'spinning' : ''} />
-              </button>
-              <button 
-                onClick={handleClearChat} 
-                className="copilot-clear-chat-btn" 
-                title="Clear Chat History"
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          )
+          </div>
         )}
       </div>
       )}
