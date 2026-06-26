@@ -4459,18 +4459,10 @@ mark {
     transition: bottom 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     box-sizing: border-box;
   }
-  
-  /* Horizontal scroll discoverability gradient mask */
+
+  /* Horizontal scroll discoverability gradient mask - disabled for zero-scroll toolbar */
   .mobile-formatter-container::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    height: 52px;
-    width: 32px;
-    background: linear-gradient(to right, transparent, var(--bg-ribbon));
-    pointer-events: none;
-    z-index: 5;
+    display: none;
   }
 
   .mobile-formatter-subrow {
@@ -4492,11 +4484,13 @@ mark {
   .mobile-formatter-mainrow {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 4px;
-    padding: 8px 12px;
-    overflow-x: auto;
+    padding: 6px 8px;
+    overflow: hidden;
     white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .mobile-formatter-mainrow::-webkit-scrollbar {
@@ -4504,9 +4498,9 @@ mark {
   }
 
   .mobile-tool-btn {
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    flex: 1 1 0%;
+    min-width: 0;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4517,9 +4511,11 @@ mark {
     cursor: pointer;
     font-size: 13px;
     padding: 0;
+    box-sizing: border-box;
   }
   
   .mobile-tool-btn.sub-btn {
+    flex: 0 0 auto;
     width: auto;
     padding: 0 10px;
     height: 28px;
@@ -4542,11 +4538,83 @@ mark {
   }
 
   .mobile-tool-divider {
-    width: 1px;
-    height: 24px;
-    background-color: var(--border-color);
-    margin: 0 4px;
+    display: none;
+  }
+
+  /* Quick Formatting Strips styling */
+  .quick-color-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 4px;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .quick-color-strip::-webkit-scrollbar {
+    display: none;
+  }
+  .quick-color-swatch {
+    width: 28px;
+    height: 28px;
     flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    box-sizing: border-box;
+    transition: transform 0.15s;
+  }
+  .quick-color-swatch:active {
+    transform: scale(0.9);
+  }
+  .quick-color-swatch.active::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+  .quick-color-swatch.active[style*="background-color: rgb(255, 255, 0)"]::after,
+  .quick-color-swatch.active[style*="background-color: rgb(255, 255, 255)"]::after,
+  .quick-color-swatch.active[style*="background-color: transparent"]::after,
+  .quick-color-swatch.active[style*="background-color: #ffff00"]::after,
+  .quick-color-swatch.active[style*="background-color: transparent"]::after {
+    background-color: #000;
+  }
+  
+  .quick-color-clear-btn {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px dashed var(--border-color);
+    background: transparent;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .quick-actions-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+    gap: 8px;
+  }
+  .quick-actions-strip .mobile-tool-btn.sub-btn {
+    flex: 1 1 0%;
+    height: 32px;
+    font-size: 12px;
   }
 
   /* Prevent focus flashes */

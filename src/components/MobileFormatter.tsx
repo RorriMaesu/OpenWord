@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Editor } from '@tiptap/react';
 import {
-  Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter,
+  Bold, Italic, Underline, AlignLeft, AlignCenter,
   AlignRight, AlignJustify, List, ListOrdered, Undo, Redo,
   Table as TableIcon, Trash2, Plus, Minus, Link as LinkIcon,
-  X, ChevronUp, Image as ImageIcon, FileText
+  X, Image as ImageIcon, FileText, Highlighter
 } from 'lucide-react';
 import { useDocument } from '../context/DocumentContext';
 
@@ -45,6 +45,7 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
   const [isTableFocused, setIsTableFocused] = useState(false);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [activeSheetTab, setActiveSheetTab] = useState<'text' | 'paragraph' | 'layout' | 'insert'>('text');
+  const [activeQuickTool, setActiveQuickTool] = useState<'text-color' | 'highlight-color' | 'align' | 'list' | null>(null);
 
   const [touchStartX, setTouchStartX] = useState(0);
 
@@ -208,6 +209,27 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
 
   const executeCoreCommand = (command: string) => {
     if (!editor) return;
+
+    if (command.startsWith('color:')) {
+      const colorVal = command.split(':')[1];
+      if (colorVal === 'clear') {
+        runCommand(chain => chain.unsetColor());
+      } else {
+        runCommand(chain => chain.setColor(colorVal));
+      }
+      return;
+    }
+
+    if (command.startsWith('highlight:')) {
+      const colorVal = command.split(':')[1];
+      if (colorVal === 'clear') {
+        runCommand(chain => chain.unsetHighlight());
+      } else {
+        runCommand(chain => chain.toggleHighlight({ color: colorVal }));
+      }
+      return;
+    }
+
     switch (command) {
       case 'undo':
         runCommand(chain => chain.undo());
@@ -232,6 +254,12 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
         break;
       case 'align-center':
         runCommand(chain => chain.setTextAlign('center'));
+        break;
+      case 'align-right':
+        runCommand(chain => chain.setTextAlign('right'));
+        break;
+      case 'align-justify':
+        runCommand(chain => chain.setTextAlign('justify'));
         break;
       case 'bullet-list':
         runCommand(chain => chain.toggleBulletList());
@@ -265,7 +293,24 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
         setIsBottomSheetOpen(nextState);
         if (nextState) {
           (document.activeElement as HTMLElement)?.blur();
+          setActiveQuickTool(null);
         }
+        break;
+      case 'toggle-text-color':
+        setActiveQuickTool(activeQuickTool === 'text-color' ? null : 'text-color');
+        setIsBottomSheetOpen(false);
+        break;
+      case 'toggle-highlight-color':
+        setActiveQuickTool(activeQuickTool === 'highlight-color' ? null : 'highlight-color');
+        setIsBottomSheetOpen(false);
+        break;
+      case 'toggle-align':
+        setActiveQuickTool(activeQuickTool === 'align' ? null : 'align');
+        setIsBottomSheetOpen(false);
+        break;
+      case 'toggle-list':
+        setActiveQuickTool(activeQuickTool === 'list' ? null : 'list');
+        setIsBottomSheetOpen(false);
         break;
     }
   };
@@ -275,8 +320,8 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
     if (!container) return;
 
     const handleInteraction = (e: Event) => {
-      const button = (e.target as HTMLElement).closest('.mobile-formatter-mainrow [data-command], .contextual-table-row [data-command]');
-      if (button) {
+      const button = (e.target as HTMLElement).closest('[data-command]');
+      if (button && containerRef.current?.contains(button)) {
         e.preventDefault();
         const command = button.getAttribute('data-command');
         if (command) {
@@ -292,72 +337,165 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
       container.removeEventListener('touchstart', handleInteraction);
       container.removeEventListener('mousedown', handleInteraction);
     };
-  }, [editor, isBottomSheetOpen]);
+  }, [editor, isBottomSheetOpen, activeQuickTool]);
 
   return (
     <div ref={containerRef} className="mobile-formatter-container no-print">
-      {/* 1. Contextual Table Toolbar (Displays only when cursor is inside a table) */}
-      {isTableFocused && (
-        <div className="mobile-formatter-subrow contextual-table-row">
-          <button
-            data-command="table-row-above"
-            className="mobile-tool-btn sub-btn"
-            title="Add Row Above"
-          >
-            <Plus size={12} /><span>Row Above</span>
-          </button>
-          <button
-            data-command="table-row-below"
-            className="mobile-tool-btn sub-btn"
-            title="Add Row Below"
-          >
-            <Plus size={12} /><span>Row Below</span>
-          </button>
-          <button
-            data-command="table-col-left"
-            className="mobile-tool-btn sub-btn"
-            title="Add Column Left"
-          >
-            <Plus size={12} /><span>Col Left</span>
-          </button>
-          <button
-            data-command="table-col-right"
-            className="mobile-tool-btn sub-btn"
-            title="Add Column Right"
-          >
-            <Plus size={12} /><span>Col Right</span>
-          </button>
-          <button
-            data-command="table-delete-row"
-            className="mobile-tool-btn sub-btn text-danger"
-            title="Delete Row"
-          >
-            <Minus size={12} /><span>Del Row</span>
-          </button>
-          <button
-            data-command="table-delete-col"
-            className="mobile-tool-btn sub-btn text-danger"
-            title="Delete Column"
-          >
-            <Minus size={12} /><span>Del Col</span>
-          </button>
-          <button
-            data-command="table-delete-table"
-            className="mobile-tool-btn sub-btn text-danger"
-            title="Delete Table"
-          >
-            <Trash2 size={12} /><span>Del Table</span>
-          </button>
+      {/* Subrow (Displays active quick tool or table contextual toolbar) */}
+      {(activeQuickTool !== null || (isTableFocused && activeQuickTool === null)) && (
+        <div className="mobile-formatter-subrow">
+          {activeQuickTool === 'text-color' && (
+            <div className="quick-color-strip">
+              <button
+                data-command="color:clear"
+                className="quick-color-clear-btn"
+                title="Default Color"
+              >
+                <X size={14} />
+              </button>
+              {TEXT_COLORS.map(color => (
+                <button
+                  key={color.value}
+                  data-command={`color:${color.value}`}
+                  className={`quick-color-swatch ${editor.isActive('textStyle', { color: color.value }) ? 'active' : ''}`}
+                  style={{ backgroundColor: color.value }}
+                  title={color.name}
+                />
+              ))}
+            </div>
+          )}
+
+          {activeQuickTool === 'highlight-color' && (
+            <div className="quick-color-strip">
+              <button
+                data-command="highlight:clear"
+                className="quick-color-clear-btn"
+                title="No Highlight"
+              >
+                <X size={14} />
+              </button>
+              {HIGHLIGHT_COLORS.filter(c => c.value !== 'transparent').map(color => (
+                <button
+                  key={color.value}
+                  data-command={`highlight:${color.value}`}
+                  className={`quick-color-swatch ${editor.isActive('highlight', { color: color.value }) ? 'active' : ''}`}
+                  style={{ backgroundColor: color.value }}
+                  title={color.name}
+                />
+              ))}
+            </div>
+          )}
+
+          {activeQuickTool === 'align' && (
+            <div className="quick-actions-strip">
+              <button
+                data-command="align-left"
+                className={`mobile-tool-btn sub-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
+              >
+                <AlignLeft size={16} /><span>Left</span>
+              </button>
+              <button
+                data-command="align-center"
+                className={`mobile-tool-btn sub-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
+              >
+                <AlignCenter size={16} /><span>Center</span>
+              </button>
+              <button
+                data-command="align-right"
+                className={`mobile-tool-btn sub-btn ${editor.isActive({ textAlign: 'right' }) ? 'active' : ''}`}
+              >
+                <AlignRight size={16} /><span>Right</span>
+              </button>
+              <button
+                data-command="align-justify"
+                className={`mobile-tool-btn sub-btn ${editor.isActive({ textAlign: 'justify' }) ? 'active' : ''}`}
+              >
+                <AlignJustify size={16} /><span>Justify</span>
+              </button>
+            </div>
+          )}
+
+          {activeQuickTool === 'list' && (
+            <div className="quick-actions-strip">
+              <button
+                data-command="bullet-list"
+                className={`mobile-tool-btn sub-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
+              >
+                <List size={16} /><span>Bulleted List</span>
+              </button>
+              <button
+                data-command="ordered-list"
+                className={`mobile-tool-btn sub-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
+              >
+                <ListOrdered size={16} /><span>Numbered List</span>
+              </button>
+            </div>
+          )}
+
+          {activeQuickTool === null && isTableFocused && (
+            <div className="contextual-table-row" style={{ display: 'flex', gap: '6px', width: '100%' }}>
+              <button
+                data-command="table-row-above"
+                className="mobile-tool-btn sub-btn"
+                title="Add Row Above"
+              >
+                <Plus size={12} /><span>Row Above</span>
+              </button>
+              <button
+                data-command="table-row-below"
+                className="mobile-tool-btn sub-btn"
+                title="Add Row Below"
+              >
+                <Plus size={12} /><span>Row Below</span>
+              </button>
+              <button
+                data-command="table-col-left"
+                className="mobile-tool-btn sub-btn"
+                title="Add Column Left"
+              >
+                <Plus size={12} /><span>Col Left</span>
+              </button>
+              <button
+                data-command="table-col-right"
+                className="mobile-tool-btn sub-btn"
+                title="Add Column Right"
+              >
+                <Plus size={12} /><span>Col Right</span>
+              </button>
+              <button
+                data-command="table-delete-row"
+                className="mobile-tool-btn sub-btn text-danger"
+                title="Delete Row"
+              >
+                <Minus size={12} /><span>Del Row</span>
+              </button>
+              <button
+                data-command="table-delete-col"
+                className="mobile-tool-btn sub-btn text-danger"
+                title="Delete Column"
+              >
+                <Minus size={12} /><span>Del Col</span>
+              </button>
+              <button
+                data-command="table-delete-table"
+                className="mobile-tool-btn sub-btn text-danger"
+                title="Delete Table"
+              >
+                <Trash2 size={12} /><span>Del Table</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* 2. Core Formatting Toolbar Row */}
+      {/* 2. Core Formatting Toolbar Row (Zero-Scroll Flexbox) */}
       <div className="mobile-formatter-mainrow">
         {/* Undo/Redo */}
         <button
           data-command="undo"
           disabled={!editor.can().undo()}
           className="mobile-tool-btn"
+          title="Undo"
         >
           <Undo size={16} />
         </button>
@@ -365,81 +503,98 @@ export const MobileFormatter: React.FC<MobileFormatterProps> = ({ editor, onOpen
           data-command="redo"
           disabled={!editor.can().redo()}
           className="mobile-tool-btn"
+          title="Redo"
         >
           <Redo size={16} />
         </button>
- 
-        <span className="mobile-tool-divider" />
 
         {/* Text Formats */}
         <button
           data-command="bold"
           className={`mobile-tool-btn ${editor.isActive('bold') ? 'active' : ''}`}
+          title="Bold"
         >
           <Bold size={16} />
         </button>
         <button
           data-command="italic"
           className={`mobile-tool-btn ${editor.isActive('italic') ? 'active' : ''}`}
+          title="Italic"
         >
           <Italic size={16} />
         </button>
         <button
           data-command="underline"
           className={`mobile-tool-btn ${editor.isActive('underline') ? 'active' : ''}`}
+          title="Underline"
         >
           <Underline size={16} />
         </button>
+
+        {/* Text Color Toggle */}
         <button
-          data-command="strike"
-          className={`mobile-tool-btn ${editor.isActive('strike') ? 'active' : ''}`}
+          data-command="toggle-text-color"
+          className={`mobile-tool-btn ${activeQuickTool === 'text-color' ? 'active' : ''}`}
+          title="Text Color"
         >
-          <Strikethrough size={16} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: 'bold', lineHeight: '1', color: 'var(--text-main)' }}>A</span>
+            <span style={{ 
+              width: '14px', 
+              height: '3px', 
+              backgroundColor: editor.getAttributes('textStyle').color || '#000000', 
+              borderRadius: '1px', 
+              marginTop: '1px' 
+            }} />
+          </div>
         </button>
 
-        <span className="mobile-tool-divider" />
-
-        {/* Alignments */}
+        {/* Highlight Color Toggle */}
         <button
-          data-command="align-left"
-          className={`mobile-tool-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
+          data-command="toggle-highlight-color"
+          className={`mobile-tool-btn ${activeQuickTool === 'highlight-color' ? 'active' : ''}`}
+          title="Highlight Color"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <Highlighter size={14} style={{ color: 'var(--text-main)' }} />
+            <span style={{ 
+              width: '14px', 
+              height: '3px', 
+              backgroundColor: editor.getAttributes('highlight').color || 'transparent', 
+              borderRadius: '1px', 
+              marginTop: '1px',
+              border: (editor.getAttributes('highlight').color || 'transparent') === 'transparent' ? '1px dashed rgba(0,0,0,0.3)' : 'none',
+              boxSizing: 'border-box'
+            }} />
+          </div>
+        </button>
+
+        {/* Alignment Toggle */}
+        <button
+          data-command="toggle-align"
+          className={`mobile-tool-btn ${activeQuickTool === 'align' ? 'active' : ''}`}
+          title="Alignments"
         >
           <AlignLeft size={16} />
         </button>
-        <button
-          data-command="align-center"
-          className={`mobile-tool-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
-        >
-          <AlignCenter size={16} />
-        </button>
 
-        <span className="mobile-tool-divider" />
-
-        {/* Lists */}
+        {/* Lists Toggle */}
         <button
-          data-command="bullet-list"
-          className={`mobile-tool-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
+          data-command="toggle-list"
+          className={`mobile-tool-btn ${activeQuickTool === 'list' ? 'active' : ''}`}
+          title="Lists"
         >
           <List size={16} />
         </button>
-        <button
-          data-command="ordered-list"
-          className={`mobile-tool-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
-        >
-          <ListOrdered size={16} />
-        </button>
-
-        <span className="mobile-tool-divider" />
 
         {/* Expanded Formatting Sheet Trigger Button */}
         <button
           data-command="toggle-sheet"
           className={`mobile-tool-btn format-trigger-btn ${isBottomSheetOpen ? 'active' : ''}`}
           title="More Formatting Options"
-          style={{ width: '48px', gap: '2px', backgroundColor: 'var(--brand-50)', borderColor: 'var(--brand-200)' }}
+          style={{ backgroundColor: 'var(--brand-50)', borderColor: 'var(--brand-200)' }}
         >
-          <ChevronUp size={14} style={{ transform: isBottomSheetOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'var(--brand-600)' }} />
-          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--brand-700)' }}>Aa</span>
+          <span style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--brand-700)' }}>Aa</span>
         </button>
       </div>
 
